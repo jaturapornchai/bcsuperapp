@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 use uuid::Uuid;
 
 use crate::{
-    auth::{ApiError, AuthUser},
+    auth::{AdminUser, ApiError},
     models::{
         ConversationDoc, FileDoc, FileDto, LastMessageSummary, MessageDoc, MessageDto, MiniAppDoc,
         MiniAppDto, UserDoc, UserDto,
@@ -20,7 +20,7 @@ use crate::{
 };
 
 pub async fn admin_overview_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let users_coll = state.db.collection::<UserDoc>("users");
@@ -61,7 +61,7 @@ pub async fn admin_overview_handler(
 }
 
 pub async fn admin_list_users_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<UserDto>>, ApiError> {
     let users_coll = state.db.collection::<UserDoc>("users");
@@ -84,7 +84,7 @@ pub struct UpdateRoleRequest {
 }
 
 pub async fn admin_update_user_role_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     Path(user_id): Path<String>,
     State(state): State<AppState>,
     Json(payload): Json<UpdateRoleRequest>,
@@ -115,7 +115,7 @@ pub async fn admin_update_user_role_handler(
 }
 
 pub async fn admin_list_mini_apps_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<MiniAppDto>>, ApiError> {
     let coll = state.db.collection::<MiniAppDoc>("mini_apps");
@@ -146,7 +146,7 @@ pub struct CreateMiniAppRequest {
 }
 
 pub async fn admin_create_mini_app_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<CreateMiniAppRequest>,
 ) -> Result<Json<MiniAppDto>, ApiError> {
@@ -213,7 +213,7 @@ pub struct UpdateMiniAppRequest {
 }
 
 pub async fn admin_update_mini_app_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     Path(app_id): Path<String>,
     State(state): State<AppState>,
     Json(payload): Json<UpdateMiniAppRequest>,
@@ -280,7 +280,7 @@ pub async fn admin_update_mini_app_handler(
 }
 
 pub async fn admin_delete_mini_app_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     Path(app_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
@@ -307,7 +307,7 @@ pub struct BroadcastRequest {
 }
 
 pub async fn admin_broadcast_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<BroadcastRequest>,
 ) -> Result<Json<Value>, ApiError> {
@@ -429,7 +429,7 @@ pub struct HandoverRequest {
 }
 
 pub async fn admin_handover_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<HandoverRequest>,
 ) -> Result<Json<Value>, ApiError> {
@@ -498,13 +498,10 @@ pub struct UpdateThemeRequest {
 }
 
 pub async fn update_theme_handler(
-    auth: AuthUser,
+    AdminUser(auth): AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<UpdateThemeRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    if auth.role != "admin" {
-        return Err(ApiError::forbidden("เฉพาะผู้ดูแลระบบเท่านั้นที่เปลี่ยนธีมได้"));
-    }
     let preset = payload.preset.trim();
     if !THEME_PRESETS.contains(&preset) {
         return Err(ApiError::bad_request("ไม่พบธีมที่เลือก"));

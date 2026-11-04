@@ -112,6 +112,32 @@ impl IntoResponse for ApiError {
     }
 }
 
+/// Extractor for admin-only endpoints. Checks the role stored in MongoDB, not
+/// just the JWT, so a demoted admin loses access immediately.
+pub struct AdminUser(pub AuthUser);
+
+#[async_trait]
+impl FromRequestParts<AppState> for AdminUser {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let user = AuthUser::from_request_parts(parts, state).await?;
+        let admins = state
+            .db
+            .collection::<bson::Document>("users")
+            .count_documents(bson::doc! { "_id": &user.user_id, "role": "admin" })
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
+        if admins == 0 {
+            return Err(ApiError::forbidden("เฉพาะผู้ดูแลระบบเท่านั้น"));
+        }
+        Ok(Self(user))
+    }
+}
+
 #[async_trait]
 impl FromRequestParts<AppState> for AuthUser {
     type Rejection = ApiError;

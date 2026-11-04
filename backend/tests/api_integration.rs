@@ -14,7 +14,7 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
     seed_initial_data(&state).await.expect("seed initial data");
 
     let mut ws_rx = state.ws_hub.tx.subscribe();
-    let app = create_router(state);
+    let app = create_router(state.clone());
 
     // 1. Health check
     let res = app
@@ -550,6 +550,26 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
     let members = convs.as_array().unwrap().iter()
         .find(|c| c["id"] == "conv_group_test5").unwrap()["members"].as_array().unwrap().len();
     assert_eq!(members, 6, "outsider post must not join the room");
+
+    // 15. Admin-only endpoints reject regular staff; new sign-ups are regular staff.
+    for (method, uri) in [
+        ("GET", "/api/admin/overview"),
+        ("GET", "/api/admin/users"),
+        ("GET", "/api/admin/ai-settings"),
+        ("GET", "/api/admin/mini-apps"),
+    ] {
+        let (status, _) = call(&app, method, uri, Some(&tester_token), None).await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{uri} must be admin only");
+        let (status, _) = call(&app, method, uri, Some(&token), None).await;
+        assert_eq!(status, StatusCode::OK, "{uri} must work for admin");
+    }
+    let newbie = format!("newbie_{}@bcapp.local", uuid::Uuid::new_v4().simple());
+    let (status, body) = call(&app, "POST", "/api/auth/google", None,
+        Some(json!({ "email": newbie, "display_name": "พนักงานใหม่" }))).await;
+    state.db.collection::<bson::Document>("users")
+        .delete_one(bson::doc! { "email": &newbie }).await.unwrap();
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["user"]["role"], "user", "new sign-ups must not become admin");
 }
 
 async fn call(

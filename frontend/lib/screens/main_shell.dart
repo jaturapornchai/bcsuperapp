@@ -948,14 +948,15 @@ class _MainShellState extends State<MainShell> {
               ),
               label: 'BC Keep',
             ),
-            NavigationDestination(
-              icon: Icon(Icons.admin_panel_settings_outlined),
-              selectedIcon: Icon(
-                Icons.admin_panel_settings_rounded,
-                color: AppTheme.brandDeep,
+            if (_user.isAdmin)
+              NavigationDestination(
+                icon: Icon(Icons.admin_panel_settings_outlined),
+                selectedIcon: Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: AppTheme.brandDeep,
+                ),
+                label: 'หลังบ้าน',
               ),
-              label: 'หลังบ้าน',
-            ),
           ],
         ),
       ),
@@ -972,7 +973,7 @@ class _MainShellState extends State<MainShell> {
         return _buildMiniAppsCenterTab();
       case 3:
         return _buildKeepVaultTab();
-      case 4:
+      case 4 when _user.isAdmin:
         return _buildAdminBackofficeTab();
       default:
         return _buildChatsTab(isWide: isWide);
@@ -985,7 +986,7 @@ class _MainShellState extends State<MainShell> {
       (1, Icons.chat_bubble_rounded, 'แชท', _totalUnreadCount),
       (2, Icons.widgets_rounded, 'บริการเสริม', 0),
       (3, Icons.bookmark_rounded, 'BC Keep', 0),
-      (4, Icons.admin_panel_settings_rounded, 'หลังบ้าน', 0),
+      if (_user.isAdmin) (4, Icons.admin_panel_settings_rounded, 'หลังบ้าน', 0),
     ];
     const idleColor = Color(0xFF94A3B8);
 
@@ -2124,25 +2125,28 @@ class _MainShellState extends State<MainShell> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Center(
-              child: OutlinedButton.icon(
-                onPressed: () => setState(() => _selectedIndex = 4),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  minimumSize: const Size(0, 34),
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                ),
-                icon: const Icon(Icons.settings_suggest_rounded, size: 16),
-                label: Text(
-                  isCompact ? 'จัดการ' : 'เพิ่ม/แก้ไขระบบเสริมหลังบ้าน',
-                  style: const TextStyle(fontSize: 12),
+          if (_user.isAdmin)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Center(
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() => _selectedIndex = 4),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    minimumSize: const Size(0, 34),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  icon: const Icon(Icons.settings_suggest_rounded, size: 16),
+                  label: Text(
+                    isCompact ? 'จัดการ' : 'เพิ่ม/แก้ไขระบบเสริมหลังบ้าน',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
       body: SingleChildScrollView(

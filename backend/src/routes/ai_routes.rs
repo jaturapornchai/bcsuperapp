@@ -8,7 +8,7 @@ use std::time::Duration;
 use uuid::Uuid;
 
 use crate::{
-    auth::{ApiError, AuthUser},
+    auth::{AdminUser, ApiError, AuthUser},
     models::{
         mask_secret_key, AiSettingsDoc, AiSettingsDto, ConversationDoc, LastMessageSummary,
         MessageDoc, MessageDto, UserDoc,
@@ -78,7 +78,7 @@ fn to_settings_dto(doc: &AiSettingsDoc) -> AiSettingsDto {
 }
 
 pub async fn get_ai_settings_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<AiSettingsDto>, ApiError> {
     let settings = get_effective_ai_settings(&state)
@@ -100,7 +100,7 @@ pub struct UpdateAiSettingsRequest {
 }
 
 pub async fn update_ai_settings_handler(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<UpdateAiSettingsRequest>,
 ) -> Result<Json<AiSettingsDto>, ApiError> {

@@ -180,11 +180,12 @@ pub async fn google_auth_handler(
             avatar_url: default_avatar,
             status_message: "ใช้งาน BC Super App (Enterprise Security)".to_string(),
             qr_token,
-            role: "admin".to_string(),
-            department: payload.department.unwrap_or_else(|| "บริหาร".to_string()),
+            // New sign-ups are regular staff; an admin promotes them in the backoffice.
+            role: "user".to_string(),
+            department: payload.department.unwrap_or_else(|| "ทั่วไป".to_string()),
             job_title: payload
                 .job_title
-                .unwrap_or_else(|| "ผู้บริหาร / แอดมินองค์กร".to_string()),
+                .unwrap_or_else(|| "พนักงาน".to_string()),
             google_id,
             created_at: Utc::now().to_rfc3339(),
         };
