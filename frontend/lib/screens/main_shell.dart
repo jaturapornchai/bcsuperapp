@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import 'chat_room_screen.dart';
 import 'mini_app_runner_screen.dart';
@@ -63,9 +64,29 @@ class _MainShellState extends State<MainShell> {
     super.initState();
     _user = widget.currentUser;
     _loadAllData();
-    _wsSub = ApiService.instance.wsEvents.listen((_) {
+    _wsSub = ApiService.instance.wsEvents.listen((event) {
       _refreshConversationsAndFriends();
+      final convId = event['conversation_id']?.toString();
+      NotificationService.instance.handleWsEvent(
+        event,
+        myUserId: _user.id,
+        room: _conversations.where((c) => c.id == convId).firstOrNull,
+      );
     });
+    NotificationService.instance.onOpenConversation = _openConversationById;
+    NotificationService.instance.init();
+  }
+
+  /// Tap on a message pop-up: bring that room on screen.
+  void _openConversationById(String conversationId) {
+    if (!mounted) return;
+    final conv = _conversations
+        .where((c) => c.id == conversationId)
+        .firstOrNull;
+    if (conv == null) return;
+    final isWide = MediaQuery.sizeOf(context).width >= 900;
+    if (!isWide) Navigator.of(context).popUntil((route) => route.isFirst);
+    _selectConversation(conv, isWide: isWide);
   }
 
   @override
@@ -81,6 +102,10 @@ class _MainShellState extends State<MainShell> {
   @override
   void dispose() {
     _wsSub?.cancel();
+    if (NotificationService.instance.onOpenConversation ==
+        _openConversationById) {
+      NotificationService.instance.onOpenConversation = null;
+    }
     _chatSearchCtrl.dispose();
     super.dispose();
   }

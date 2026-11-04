@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import 'mini_app_runner_screen.dart';
 
@@ -70,6 +71,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void initState() {
     super.initState();
     _conversation = widget.conversation;
+    NotificationService.instance.openConversationId = _conversation.id;
     _loadRoomData();
     _wsSub = ApiService.instance.wsEvents.listen(_handleWsEvent);
   }
@@ -79,6 +81,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.conversation.id != widget.conversation.id) {
       _conversation = widget.conversation;
+      NotificationService.instance.openConversationId = _conversation.id;
       _replyingTo = null;
       _showStickerPicker = false;
       _showSearchBar = false;
@@ -93,6 +96,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   void dispose() {
     _wsSub?.cancel();
+    if (NotificationService.instance.openConversationId == _conversation.id) {
+      NotificationService.instance.openConversationId = null;
+    }
     _msgCtrl.dispose();
     _roomSearchCtrl.dispose();
     _scrollCtrl.dispose();
