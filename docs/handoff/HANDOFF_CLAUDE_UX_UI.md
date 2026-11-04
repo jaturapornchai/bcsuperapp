@@ -13,7 +13,7 @@
 
 ## 2. โครงสร้างไฟล์ Frontend ที่ Claude ต้องปรับปรุง UX/UI (`d:\bcapp\frontend\lib`)
 1. [`lib/main.dart`](file:///d:/bcapp/frontend/lib/main.dart) — Entrypoint, Auth Gate, และการสลับหน้าจอระหว่าง `LoginScreen` กับ `MainShell`
-2. [`lib/theme/app_theme.dart`](file:///d:/bcapp/frontend/lib/theme/app_theme.dart) — Design System หลัก (สี LINE Emerald `#06C755`, Executive Slate `#0F172A`, ฟอนต์ไทย `GoogleFonts.promptTextTheme`, คอมโพเนนต์ `UserAvatar`, `PillBadge`, และธีมพื้นหลังห้องแชท 3 โหมด)
+2. [`lib/theme/app_theme.dart`](file:///d:/bcapp/frontend/lib/theme/app_theme.dart) — Design System หลัก (สี Emerald `#06C755`, Executive Slate `#0F172A`, ฟอนต์ไทย `GoogleFonts.promptTextTheme`, คอมโพเนนต์ `UserAvatar`, `PillBadge`, และธีมพื้นหลังห้องแชท 3 โหมด)
 3. [`lib/models/models.dart`](file:///d:/bcapp/frontend/lib/models/models.dart) — Data Models ทั้งหมด (`AppUser`, `Conversation`, `ChatMessage`, `AttachmentInfo`, `VaultData`, `MiniAppItem`, `NoteItem`, `AdminOverview`, `AiSummaryResult`, `AiAssistResult`, `AiAdminSettings`)
 4. [`lib/services/api_service.dart`](file:///d:/bcapp/frontend/lib/services/api_service.dart) — ตัวเชื่อมต่อ REST API และ WebSocket Real-time ทั้ง 27 Endpoints
 5. [`lib/screens/login_screen.dart`](file:///d:/bcapp/frontend/lib/screens/login_screen.dart) — หน้าเข้าสู่ระบบด้วยบัญชี Gmail และปุ่มสลับบัญชีทดสอบด่วน (`jead@bcapp.local`, `somchai.sales@bcapp.local`, `nida.acc@bcapp.local`)
@@ -23,14 +23,14 @@
    - แท็บ 2: **บริการเสริม (Mini-Apps Center)** — ศูนย์รวมระบบเสริม WebView แยกหมวดหมู่
    - แท็บ 3: **BC Keep** — คลังบันทึกส่วนตัวถาวรซิงค์ตามบัญชี Gmail
    - แท็บ 4: **หลังบ้าน (Admin Backoffice)** — สถิติระบบ, ตั้งค่าสมองกล DeepSeek AI, จัดการ Mini-App WebView สดโดยไม่ต้องอัปเดตแอป, โอนย้ายห้องแชทเมื่อพนักงานลาออก (`1-Click Handover + AI Briefing`), และส่งประกาศ Broadcast
-7. [`lib/screens/chat_room_screen.dart`](file:///d:/bcapp/frontend/lib/screens/chat_room_screen.dart) — หน้าห้องแชทสไตล์ LINE ครบวงจร:
+7. [`lib/screens/chat_room_screen.dart`](file:///d:/bcapp/frontend/lib/screens/chat_room_screen.dart) — หน้าห้องแชทครบวงจร:
    - แถบปักหมุดประกาศบนหัวห้องแชท (Pin Announcement Banner)
    - ลายน้ำนิรภัยองค์กร (Enterprise Security Watermark)
    - ฟองข้อความแสดงสถานะ **`อ่านแล้ว`** (และ `อ่านแล้ว N` ในกลุ่ม)
    - ปุ่ม **`🙋‍♂️ กดรับงานนี้`** -> **`✅ รับงานโดย...`** -> **`🎉 เสร็จสิ้น`** บนฟองข้อความ
    - สวิตช์โหมดความเร่งด่วน (`ปกติ` / `🚨 ด่วนพิเศษ DING` / `🌙 ส่งเงียบนอกเวลา`)
    - สวิตช์ **`🔒 โหมดความลับ`** และปุ่มด่วน **`ส่งผิดลบได้`** (ลบข้อความไร้ร่องรอยและทำลายไฟล์ใน MinIO จริง)
-   - การ์ด **LINE Flex Card** พร้อมปุ่ม **`✅ อนุมัติทันที`** / **`❌ ไม่อนุมัติ`** ในห้องแชท
+   - การ์ด **Flex Card** พร้อมปุ่ม **`✅ อนุมัติทันที`** / **`❌ ไม่อนุมัติ`** ในห้องแชท
    - ปุ่ม **`✨ AI สรุปแชท & แกะงาน`**, **`@ai ถามสมองกลในกลุ่ม`**, และ **`🪄 AI เกลาคำพูด / แนะนำคำตอบ`**
    - Drawer **"คลังรูป & ไฟล์ถาวร (MinIO Vault)"** แยกแท็บรูปภาพ, ไฟล์เอกสาร, และโน้ตกลุ่ม
 8. [`lib/screens/mini_app_runner_screen.dart`](file:///d:/bcapp/frontend/lib/screens/mini_app_runner_screen.dart) — หน้าต่างรันระบบเสริม Mini-App WebView พร้อม SSO Token และส่งการ์ด Flex Card เข้าห้องแชท
@@ -48,13 +48,13 @@
 คัดลอก Prompt ด้านล่างนี้ไปวางสั่ง Claude Code ในโฟลเดอร์ `d:\bcapp` ได้ทันที:
 
 ```text
-อ่านไฟล์ d:\bcapp\AGENTS.md และ d:\bcapp\docs\handoff\HANDOFF_CLAUDE_UX_UI.md จากนั้นช่วยยกระดับ UX/UI ของแอป Flutter ใน d:\bcapp\frontend\lib ให้มีความสวยงาม หรูหรา ดูพรีเมี่ยมระดับโลก (สไตล์ LINE + Lark Enterprise Super App) ทั้งบนหน้าจอมือถือ (Mobile Portrait 412x915) และหน้าจอคอมพิวเตอร์/เว็บ (Desktop Split-View 1440x900) โดย:
+อ่านไฟล์ d:\bcapp\AGENTS.md และ d:\bcapp\docs\handoff\HANDOFF_CLAUDE_UX_UI.md จากนั้นช่วยยกระดับ UX/UI ของแอป Flutter ใน d:\bcapp\frontend\lib ให้มีความสวยงาม หรูหรา ดูพรีเมี่ยมระดับโลก (Enterprise Super App) ทั้งบนหน้าจอมือถือ (Mobile Portrait 412x915) และหน้าจอคอมพิวเตอร์/เว็บ (Desktop Split-View 1440x900) โดย:
 
 1. ปรับปรุงความประณีตของ Visual Hierarchy, ระยะห่าง (Spacing & Padding), เงาการ์ดแบบนุ่มนวล (Soft Layered Shadows), เอฟเฟกต์ Glassmorphism, Micro-animations เวลาเปลี่ยนแท็บหรือเปิดห้องแชท และความคมชัดของ Typography ภาษาไทย
 2. ยึดกฎเหล็ก Baseline-First: ตัวหนังสือ ปุ่ม ช่องกรอก ไอคอน และ Badge ในแถวเดียวกันต้องอยู่กึ่งกลางระนาบเดียวกันเป๊ะ ห้ามเหลื่อมสูง-ต่ำ และห้ามเกิด RenderFlex overflow บนทุกขนาดหน้าจอ
 3. รักษาฟีเจอร์และการเชื่อมต่อกับ Rust Backend (พอร์ต 8095) ให้ครบ 100%:
    - ล็อกอินด้วย Gmail + สลับบัญชีด่วน
-   - แชทสไตล์ LINE + สถานะ "อ่านแล้ว" + แยกโฟลเดอร์งาน/ส่วนตัว + ปักหมุดประกาศ
+   - แชท + สถานะ "อ่านแล้ว" + แยกโฟลเดอร์งาน/ส่วนตัว + ปักหมุดประกาศ
    - โหมดความลับองค์กร (Confidential + ลายน้ำนิรภัย) + ส่งผิดลบได้ทันทีพร้อมทำลายไฟล์ใน MinIO
    - ปุ่ม "กดรับงานนี้" บนข้อความ + โหมดด่วนพิเศษ (DING) / ส่งเงียบ + กดอนุมัติการ์ด Flex Card ในแชท
    - สมองกล DeepSeek AI (@ai ในกลุ่ม, สรุปแชท & แกะงาน, เกลาคำพูด)
