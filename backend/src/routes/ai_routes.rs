@@ -571,6 +571,10 @@ pub async fn insert_ai_message(
         is_confidential: false,
         confidential_pin: None,
         expire_at: None,
+        priority: "normal".to_string(),
+        task_status: None,
+        accepted_by: None,
+        accepted_at: None,
         created_at: now.clone(),
     };
 

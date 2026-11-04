@@ -246,6 +246,10 @@ class ChatMessage {
   final int readCount;
   final bool isUnsent;
   final bool isConfidential;
+  final String priority; // normal | urgent | silent
+  final String? taskStatus; // open | accepted | done
+  final String? acceptedBy;
+  final String? acceptedAt;
   final String createdAt;
 
   const ChatMessage({
@@ -266,6 +270,10 @@ class ChatMessage {
     required this.readCount,
     required this.isUnsent,
     this.isConfidential = false,
+    this.priority = 'normal',
+    this.taskStatus,
+    this.acceptedBy,
+    this.acceptedAt,
     required this.createdAt,
   });
 
@@ -291,6 +299,18 @@ class ChatMessage {
         _toBool(json['is_confidential'] ?? json['isConfidential'], false) ||
         _toBool(flexMap?['is_confidential'], false) ||
         rawContent.startsWith('[ลับเฉพาะองค์กร]');
+
+    final rawPriority =
+        (json['priority'] ?? flexMap?['priority'] ?? 'normal').toString();
+    final rawTaskStatus =
+        (json['task_status'] ?? json['taskStatus'] ?? flexMap?['task_status'])
+            ?.toString();
+    final rawAcceptedBy =
+        (json['accepted_by'] ?? json['acceptedBy'] ?? flexMap?['accepted_by'])
+            ?.toString();
+    final rawAcceptedAt =
+        (json['accepted_at'] ?? json['acceptedAt'] ?? flexMap?['accepted_at'])
+            ?.toString();
 
     return ChatMessage(
       id: _extractId(json),
@@ -329,6 +349,10 @@ class ChatMessage {
       ),
       isUnsent: _toBool(json['is_unsent'] ?? json['isUnsent'], false),
       isConfidential: confidentialFlag,
+      priority: rawPriority.isEmpty ? 'normal' : rawPriority,
+      taskStatus: rawTaskStatus,
+      acceptedBy: rawAcceptedBy,
+      acceptedAt: rawAcceptedAt,
       createdAt: (json['created_at'] ?? json['createdAt'] ?? '').toString(),
     );
   }

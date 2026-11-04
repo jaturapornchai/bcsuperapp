@@ -45,6 +45,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _showStickerPicker = false;
   bool _showSearchBar = false;
   bool _isConfidentialMode = false;
+  String _selectedPriority = 'normal'; // normal | urgent | silent
   bool _showSecurityWatermark = true;
   final Set<String> _revealedMessageIds = <String>{};
   String _searchQuery = '';
@@ -110,6 +111,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         type == 'message_read' ||
         type == 'message_unsend' ||
         type == 'message_deleted' ||
+        type == 'message_updated' ||
+        type == 'task_updated' ||
+        type == 'card_approved' ||
         type == 'conversation_updated') {
       _refreshMessagesQuietly();
     }
@@ -158,6 +162,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (text.isEmpty) return;
     final replyId = _replyingTo?.id;
     final confidential = _isConfidentialMode;
+    final priority = _selectedPriority;
     _msgCtrl.clear();
     setState(() => _replyingTo = null);
 
@@ -168,6 +173,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         content: text,
         replyToId: replyId,
         isConfidential: confidential,
+        priority: priority,
+        taskStatus: 'open',
       );
       if (!mounted) return;
       setState(() {
@@ -180,6 +187,68 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('ส่งข้อความไม่สำเร็จ: $e')),
+      );
+    }
+  }
+
+  void _cyclePriority() {
+    setState(() {
+      if (_selectedPriority == 'normal') {
+        _selectedPriority = 'urgent';
+      } else if (_selectedPriority == 'urgent') {
+        _selectedPriority = 'silent';
+      } else {
+        _selectedPriority = 'normal';
+      }
+    });
+  }
+
+  Future<void> _handleTaskAction(ChatMessage msg, String action) async {
+    try {
+      final updated = await ApiService.instance.updateTaskAction(
+        msg.id,
+        action,
+      );
+      if (!mounted) return;
+      setState(() {
+        _messages = _messages
+            .map((m) => m.id == msg.id ? updated : m)
+            .toList();
+      });
+      widget.onConversationUpdated?.call();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('อัปเดตสถานะงานไม่สำเร็จ: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleApproveFlexCard(ChatMessage msg, String status) async {
+    try {
+      final updated = await ApiService.instance.approveFlexCard(
+        msg.id,
+        status,
+      );
+      if (!mounted) return;
+      setState(() {
+        _messages = _messages
+            .map((m) => m.id == msg.id ? updated : m)
+            .toList();
+      });
+      widget.onConversationUpdated?.call();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: status == 'อนุมัติแล้ว'
+              ? AppTheme.deepEmerald
+              : AppTheme.dangerRed,
+          content: Text('ประทับตรา "$status" ลงในการ์ดเรียบร้อยแล้ว'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('อนุมัติการ์ดไม่สำเร็จ: $e')),
       );
     }
   }
@@ -881,12 +950,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   Widget _buildRoomHeader(ChatRoomThemeMode themeMode) {
     final isWork = _conversation.folder == 'work';
+    final isCompact = MediaQuery.of(context).size.width < 640;
     final peerDept = _conversation.peerUser?.department ??
         (_conversation.isGroup ? 'กลุ่มงานองค์กร' : 'บริหาร/ปฏิบัติการ');
 
     return Container(
       height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 14),
       decoration: const BoxDecoration(
         color: AppTheme.slateDark,
         border: Border(
@@ -901,19 +971,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               onPressed: () => Navigator.of(context).pop(),
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
               color: Colors.white,
+              visualDensity: VisualDensity.compact,
               tooltip: 'ย้อนกลับ',
             ),
-            const SizedBox(width: 4),
           ],
           UserAvatar(
             name: _conversation.name,
             avatarUrl: _conversation.avatarUrl,
-            radius: 19,
+            radius: isCompact ? 17 : 19,
             showOnline: !_conversation.isGroup,
             isOfficial: _conversation.isOfficial,
             isGroup: _conversation.isGroup,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -929,21 +999,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             : _conversation.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 15.5,
+                          fontSize: isCompact ? 14 : 15.5,
                           fontWeight: FontWeight.w700,
                           height: 1.15,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    PillBadge(
-                      text: peerDept,
-                      backgroundColor: const Color(0xFF334155),
-                      textColor: const Color(0xFFE2E8F0),
-                      icon: Icons.badge_outlined,
-                    ),
+                    if (!isCompact) ...[
+                      const SizedBox(width: 6),
+                      PillBadge(
+                        text: peerDept,
+                        backgroundColor: const Color(0xFF334155),
+                        textColor: const Color(0xFFE2E8F0),
+                        icon: Icons.badge_outlined,
+                      ),
+                    ],
                     const SizedBox(width: 6),
                     InkWell(
                       onTap: _toggleFolderCategory,
@@ -956,19 +1028,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         textColor: isWork
                             ? const Color(0xFF93C5FD)
                             : const Color(0xFF4ADE80),
-                        icon: isWork
-                            ? Icons.work_outline_rounded
-                            : Icons.person_outline_rounded,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  '🔒 ห้องสนทนาองค์กร (Enterprise DLP) · ส่งผิดกดลบและทำลายไฟล์บนเซิร์ฟเวอร์ได้ทันที',
+                Text(
+                  isCompact
+                      ? '$peerDept · ส่งผิดลบได้ 100%'
+                      : '🔒 ห้องสนทนาองค์กร (Enterprise DLP) · ส่งผิดกดลบและทำลายไฟล์บนเซิร์ฟเวอร์ได้ทันที',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xFF94A3B8),
                     fontSize: 11,
                   ),
@@ -977,36 +1048,38 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
           ),
 
-          IconButton(
-            onPressed: () => setState(
-              () => _showSecurityWatermark = !_showSecurityWatermark,
+          if (!isCompact) ...[
+            IconButton(
+              onPressed: () => setState(
+                () => _showSecurityWatermark = !_showSecurityWatermark,
+              ),
+              tooltip: _showSecurityWatermark
+                  ? 'เปิดลายน้ำนิรภัยป้องกันการแคปหน้าจออยู่'
+                  : 'เปิดลายน้ำนิรภัยองค์กร',
+              icon: Icon(
+                Icons.verified_user_rounded,
+                size: 19,
+                color: _showSecurityWatermark
+                    ? AppTheme.lineEmerald
+                    : const Color(0xFF94A3B8),
+              ),
             ),
-            tooltip: _showSecurityWatermark
-                ? 'เปิดลายน้ำนิรภัยป้องกันการแคปหน้าจออยู่'
-                : 'เปิดลายน้ำนิรภัยองค์กร',
-            icon: Icon(
-              Icons.verified_user_rounded,
-              size: 19,
-              color: _showSecurityWatermark
-                  ? AppTheme.lineEmerald
-                  : const Color(0xFF94A3B8),
+            IconButton(
+              onPressed: _togglePinRoom,
+              tooltip: _conversation.isPinned
+                  ? 'เลิกปักหมุดห้องแชท'
+                  : 'ปักหมุดห้องแชท',
+              icon: Icon(
+                _conversation.isPinned
+                    ? Icons.push_pin_rounded
+                    : Icons.push_pin_outlined,
+                size: 19,
+                color: _conversation.isPinned
+                    ? AppTheme.goldPin
+                    : const Color(0xFFCBD5E1),
+              ),
             ),
-          ),
-          IconButton(
-            onPressed: _togglePinRoom,
-            tooltip: _conversation.isPinned
-                ? 'เลิกปักหมุดห้องแชท'
-                : 'ปักหมุดห้องแชท',
-            icon: Icon(
-              _conversation.isPinned
-                  ? Icons.push_pin_rounded
-                  : Icons.push_pin_outlined,
-              size: 19,
-              color: _conversation.isPinned
-                  ? AppTheme.goldPin
-                  : const Color(0xFFCBD5E1),
-            ),
-          ),
+          ],
           IconButton(
             onPressed: () {
               setState(() {
@@ -1017,6 +1090,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 }
               });
             },
+            visualDensity: VisualDensity.compact,
             tooltip: 'ค้นหาข้อความในห้องนี้',
             icon: Icon(
               Icons.search_rounded,
@@ -1026,86 +1100,93 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   : const Color(0xFFCBD5E1),
             ),
           ),
-          PopupMenuButton<ChatRoomThemeMode>(
-            tooltip: 'เปลี่ยนสีพื้นหลังห้องแชท',
-            icon: const Icon(
-              Icons.palette_outlined,
-              size: 19,
-              color: Color(0xFFCBD5E1),
+          if (!isCompact)
+            PopupMenuButton<ChatRoomThemeMode>(
+              tooltip: 'เปลี่ยนสีพื้นหลังห้องแชท',
+              icon: const Icon(
+                Icons.palette_outlined,
+                size: 19,
+                color: Color(0xFFCBD5E1),
+              ),
+              onSelected: (mode) async {
+                await ApiService.instance.setChatTheme(mode);
+                if (!mounted) return;
+                setState(() {});
+                widget.onThemeChanged?.call(mode);
+              },
+              itemBuilder: (ctx) => ChatRoomThemeMode.values.map((m) {
+                return PopupMenuItem<ChatRoomThemeMode>(
+                  value: m,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: m.backgroundColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.borderSubtle),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        m.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: m == themeMode
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
-            onSelected: (mode) async {
-              await ApiService.instance.setChatTheme(mode);
-              if (!mounted) return;
-              setState(() {});
-              widget.onThemeChanged?.call(mode);
-            },
-            itemBuilder: (ctx) => ChatRoomThemeMode.values.map((m) {
-              return PopupMenuItem<ChatRoomThemeMode>(
-                value: m,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: m.backgroundColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.borderSubtle),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      m.label,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: m == themeMode
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
           const SizedBox(width: 4),
           SizedBox(
-            height: 36,
+            height: 34,
             child: ElevatedButton.icon(
               onPressed: _openAiSummarizeModal,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.personalPurple,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 11),
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 11),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              icon: const Icon(Icons.auto_awesome_rounded, size: 15),
-              label: const Text(
-                '✨ AI สรุปแชท & แกะงาน',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              icon: const Icon(Icons.auto_awesome_rounded, size: 14),
+              label: Text(
+                isCompact ? 'AI สรุป' : '✨ AI สรุปแชท & แกะงาน',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           SizedBox(
-            height: 36,
+            height: 34,
             child: ElevatedButton.icon(
               onPressed: _openPermanentVaultDialog,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.lineEmerald,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              icon: const Icon(Icons.folder_copy_rounded, size: 15),
-              label: const Text(
-                'คลังรูป & ไฟล์ถาวร',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              icon: const Icon(Icons.folder_copy_rounded, size: 14),
+              label: Text(
+                isCompact ? 'คลังไฟล์' : 'คลังรูป & ไฟล์ถาวร',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -1370,7 +1451,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
           Flexible(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 430),
+              constraints: BoxConstraints(
+                maxWidth: math.min(
+                  430,
+                  MediaQuery.of(context).size.width * 0.65,
+                ),
+              ),
               child: Column(
                 crossAxisAlignment: isMe
                     ? CrossAxisAlignment.end
@@ -1382,11 +1468,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       right: 4,
                       bottom: 4,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                    child: Wrap(
+                      spacing: 5,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      alignment: isMe ? WrapAlignment.end : WrapAlignment.start,
                       children: [
-                        if (!isMe) ...[
+                        if (!isMe)
                           Text(
                             msg.senderName,
                             style: TextStyle(
@@ -1397,21 +1485,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                                   : const Color(0xFF0F172A),
                             ),
                           ),
-                          const SizedBox(width: 6),
-                        ],
                         PillBadge(
                           text: msg.senderDepartment,
                           backgroundColor: Colors.white.withValues(alpha: 0.88),
                           textColor: AppTheme.slateDark,
                         ),
-                        if (msg.isConfidential) ...[
-                          const SizedBox(width: 5),
+                        if (msg.priority == 'urgent')
+                          const PillBadge(
+                            text: '🚨 ด่วนพิเศษ (DING)',
+                            backgroundColor: Color(0xFFDC2626),
+                            textColor: Colors.white,
+                          ),
+                        if (msg.priority == 'silent')
+                          const PillBadge(
+                            text: '🌙 ส่งเงียบ (ไม่ส่งเสียงรบกวน)',
+                            backgroundColor: Color(0xFF312E81),
+                            textColor: Color(0xFFE0E7FF),
+                          ),
+                        if (msg.isConfidential)
                           const PillBadge(
                             text: '🔒 ลับเฉพาะองค์กร',
                             backgroundColor: Color(0xFF7F1D1D),
                             textColor: Color(0xFFFECACA),
                           ),
-                        ],
                       ],
                     ),
                   ),
@@ -1422,6 +1518,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         ? _buildConfidentialWrapper(msg, isMe)
                         : _buildBubbleContent(msg, isMe),
                   ),
+                  if (msg.type != 'sticker' && msg.type != 'flex_card')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: _buildTaskClaimBar(msg),
+                    ),
                 ],
               ),
             ),
@@ -2136,6 +2237,88 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  Widget _buildTaskClaimBar(ChatMessage msg) {
+    final status = msg.taskStatus ?? 'open';
+    final actor = (msg.acceptedBy != null && msg.acceptedBy!.trim().isNotEmpty)
+        ? msg.acceptedBy!
+        : 'ทีมงาน';
+
+    if (status == 'done') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF065F46),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: const Color(0xFF34D399)),
+        ),
+        child: Text(
+          '🎉 ดำเนินการเสร็จสิ้นโดย: $actor',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+
+    if (status == 'accepted') {
+      return InkWell(
+        onTap: () => _handleTaskAction(msg, 'done'),
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppTheme.softEmerald,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppTheme.lineEmerald),
+          ),
+          child: Text(
+            '✅ รับงานโดย: $actor • กดเมื่อเสร็จ',
+            style: const TextStyle(
+              color: AppTheme.deepEmerald,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return InkWell(
+      onTap: () => _handleTaskAction(msg, 'accept'),
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppTheme.borderSubtle),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.pan_tool_alt_rounded,
+              size: 13,
+              color: AppTheme.workBlue,
+            ),
+            SizedBox(width: 4),
+            Text(
+              '🙋‍♂️ กดรับงานนี้',
+              style: TextStyle(
+                color: AppTheme.slateDark,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFlexCardBubble(ChatMessage msg) {
     final flex = msg.flexPayload ?? const <String, dynamic>{};
     final appTitle = (flex['app_title'] ?? 'BC Mini-App').toString();
@@ -2148,8 +2331,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final iconName = (flex['icon'] ?? 'widgets').toString();
     final accent = AppTheme.parseHexColor(colorHex);
 
+    final approvalStatus =
+        (flex['approval_status'] ?? flex['status'] ?? '').toString();
+    final approvedBy = (flex['approved_by'] ?? '').toString();
+    final isApproved =
+        approvalStatus == 'อนุมัติแล้ว' ||
+        (approvedBy.isNotEmpty && !approvalStatus.contains('ไม่อนุมัติ'));
+    final isRejected = approvalStatus == 'ไม่อนุมัติ';
+    final cardWidth = math.min(
+      290.0,
+      MediaQuery.of(context).size.width * 0.64,
+    );
+
     return Container(
-      width: 300,
+      width: cardWidth,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -2180,6 +2375,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 Expanded(
                   child: Text(
                     appTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
@@ -2187,21 +2384,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    badge,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      badge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -2247,15 +2449,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'รายละเอียดสำคัญ',
+                          'รายละเอียด',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppTheme.slateMuted,
                           ),
                         ),
+                        const SizedBox(width: 6),
                         Flexible(
                           child: Text(
                             highlight,
+                            textAlign: TextAlign.right,
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
@@ -2278,9 +2482,118 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                 ],
                 const SizedBox(height: 10),
+
+                // Digital Approval Stamp or In-Chat Live Approval Buttons
+                if (isApproved || isRejected)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isRejected
+                          ? const Color(0xFFFEF2F2)
+                          : AppTheme.softEmerald,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isRejected
+                            ? AppTheme.dangerRed
+                            : AppTheme.lineEmerald,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isRejected
+                              ? Icons.cancel_rounded
+                              : Icons.verified_rounded,
+                          size: 16,
+                          color: isRejected
+                              ? AppTheme.dangerRed
+                              : AppTheme.deepEmerald,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            isRejected
+                                ? '❌ ไม่อนุมัติโดย ${approvedBy.isNotEmpty ? approvedBy : "ผู้บริหาร"}'
+                                : '✅ อนุมัติแล้วโดย ${approvedBy.isNotEmpty ? approvedBy : "ผู้บริหาร"}',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              color: isRejected
+                                  ? AppTheme.dangerRed
+                                  : AppTheme.deepEmerald,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 32,
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                _handleApproveFlexCard(msg, 'อนุมัติแล้ว'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.lineEmerald,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              '✅ อนุมัติทันที',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: SizedBox(
+                          height: 32,
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                _handleApproveFlexCard(msg, 'ไม่อนุมัติ'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.dangerRed,
+                              side: const BorderSide(color: Color(0xFFFECACA)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              '❌ ไม่อนุมัติ',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
-                  height: 34,
+                  height: 32,
                   child: OutlinedButton.icon(
                     onPressed: () {
                       final appCode = (flex['app_code'] ?? '').toString();
@@ -2316,13 +2629,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     },
                     icon: Icon(
                       Icons.open_in_new_rounded,
-                      size: 14,
+                      size: 13,
                       color: accent,
                     ),
                     label: Text(
-                      'เปิดดูในระบบเสริม ($appTitle)',
+                      'เปิดระบบเสริม ($appTitle)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: accent,
                       ),
@@ -2464,7 +2779,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // DeepSeek AI Assistant Quick Bar above composer
+            // DeepSeek AI Assistant + Priority + Confidential Quick Bar above composer
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: SingleChildScrollView(
@@ -2472,6 +2787,110 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Priority Mode Toggle (ปกติ -> 🚨 ด่วนพิเศษ -> 🌙 ส่งเงียบนอกเวลา)
+                    InkWell(
+                      borderRadius: BorderRadius.circular(999),
+                      onTap: _cyclePriority,
+                      child: Container(
+                        height: 28,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: _selectedPriority == 'urgent'
+                              ? const Color(0xFFDC2626)
+                              : _selectedPriority == 'silent'
+                              ? const Color(0xFF312E81)
+                              : AppTheme.surfaceBg,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: _selectedPriority == 'normal'
+                                ? AppTheme.borderSubtle
+                                : Colors.transparent,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _selectedPriority == 'urgent'
+                                  ? Icons.notifications_active_rounded
+                                  : _selectedPriority == 'silent'
+                                  ? Icons.nights_stay_rounded
+                                  : Icons.chat_bubble_outline_rounded,
+                              size: 14,
+                              color: _selectedPriority == 'normal'
+                                  ? AppTheme.slateBody
+                                  : Colors.white,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              _selectedPriority == 'urgent'
+                                  ? '🚨 ด่วนพิเศษ (DING)'
+                                  : _selectedPriority == 'silent'
+                                  ? '🌙 ส่งเงียบนอกเวลา'
+                                  : 'โหมดส่ง: ปกติ',
+                              style: TextStyle(
+                                color: _selectedPriority == 'normal'
+                                    ? AppTheme.slateDark
+                                    : Colors.white,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Confidential Toggle Pill
+                    InkWell(
+                      borderRadius: BorderRadius.circular(999),
+                      onTap: () => setState(
+                        () => _isConfidentialMode = !_isConfidentialMode,
+                      ),
+                      child: Container(
+                        height: 28,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: _isConfidentialMode
+                              ? const Color(0xFF991B1B)
+                              : AppTheme.surfaceBg,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: _isConfidentialMode
+                                ? const Color(0xFF991B1B)
+                                : AppTheme.borderSubtle,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _isConfidentialMode
+                                  ? Icons.lock_rounded
+                                  : Icons.lock_open_rounded,
+                              size: 14,
+                              color: _isConfidentialMode
+                                  ? const Color(0xFFFDE68A)
+                                  : AppTheme.slateBody,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '🔒 โหมดความลับ',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: _isConfidentialMode
+                                    ? Colors.white
+                                    : AppTheme.slateBody,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
                     InkWell(
                       borderRadius: BorderRadius.circular(999),
                       onTap: _insertAiMention,
@@ -2656,6 +3075,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               children: [
                 IconButton(
                   onPressed: _isUploading ? null : _showAttachmentMenu,
+                  visualDensity: VisualDensity.compact,
                   tooltip: 'แนบรูปภาพ / ไฟล์เอกสารเก็บถาวรบน MinIO',
                   icon: _isUploading
                       ? const SizedBox(
@@ -2670,6 +3090,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
                 IconButton(
                   onPressed: _openMiniAppPicker,
+                  visualDensity: VisualDensity.compact,
                   tooltip: 'ส่งการ์ดจากระบบเสริม Super App (LINE Flex Card)',
                   icon: const Icon(
                     Icons.widgets_outlined,
@@ -2679,6 +3100,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 IconButton(
                   onPressed: () =>
                       setState(() => _showStickerPicker = !_showStickerPicker),
+                  visualDensity: VisualDensity.compact,
                   tooltip: 'ส่งสติ๊กเกอร์',
                   icon: Icon(
                     Icons.emoji_emotions_outlined,
@@ -2688,55 +3110,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                // Confidential Mode Toggle Switch Button
-                InkWell(
-                  borderRadius: BorderRadius.circular(999),
-                  onTap: () => setState(
-                    () => _isConfidentialMode = !_isConfidentialMode,
-                  ),
-                  child: Container(
-                    height: 34,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: _isConfidentialMode
-                          ? const Color(0xFF991B1B)
-                          : AppTheme.surfaceBg,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: _isConfidentialMode
-                            ? const Color(0xFF991B1B)
-                            : AppTheme.borderSubtle,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _isConfidentialMode
-                              ? Icons.lock_rounded
-                              : Icons.lock_open_rounded,
-                          size: 14,
-                          color: _isConfidentialMode
-                              ? const Color(0xFFFDE68A)
-                              : AppTheme.slateBody,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'โหมดความลับ',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: _isConfidentialMode
-                                ? Colors.white
-                                : AppTheme.slateBody,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _msgCtrl,
@@ -2744,8 +3117,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     textInputAction: TextInputAction.send,
                     decoration: InputDecoration(
                       hintText: _isConfidentialMode
-                          ? '🔒 พิมพ์ข้อความลับเฉพาะองค์กร (ส่งผิดลบได้ทันที)...'
-                          : 'พิมพ์ข้อความถึง ${_conversation.name} (ส่งผิดลบได้)...',
+                          ? '🔒 พิมพ์ข้อความลับเฉพาะองค์กร...'
+                          : _selectedPriority == 'urgent'
+                          ? '🚨 พิมพ์ข้อความด่วนพิเศษ (DING)...'
+                          : 'พิมพ์ข้อความถึง ${_conversation.name}...',
                       fillColor: _isConfidentialMode
                           ? Colors.white
                           : AppTheme.surfaceBg,
@@ -2764,7 +3139,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 SizedBox(
                   height: 40,
                   width: 44,
@@ -2773,6 +3148,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isConfidentialMode
                           ? const Color(0xFF991B1B)
+                          : _selectedPriority == 'urgent'
+                          ? AppTheme.dangerRed
                           : AppTheme.lineEmerald,
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(

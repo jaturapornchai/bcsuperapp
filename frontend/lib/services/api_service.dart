@@ -423,10 +423,21 @@ class ApiService {
     Map<String, dynamic>? flexPayload,
     String? replyToId,
     bool isConfidential = false,
+    String priority = 'normal',
+    String? taskStatus,
   }) async {
     final effectiveFlex = flexPayload != null
-        ? {...flexPayload, if (isConfidential) 'is_confidential': true}
-        : (isConfidential ? <String, dynamic>{'is_confidential': true} : null);
+        ? {
+            ...flexPayload,
+            if (isConfidential) 'is_confidential': true,
+            if (priority != 'normal') 'priority': priority,
+          }
+        : (isConfidential || priority != 'normal'
+              ? <String, dynamic>{
+                  if (isConfidential) 'is_confidential': true,
+                  if (priority != 'normal') 'priority': priority,
+                }
+              : null);
 
     final effectiveContent =
         isConfidential && !content.startsWith('[ลับเฉพาะองค์กร]')
@@ -441,6 +452,8 @@ class ApiService {
         'type': type,
         'content': effectiveContent,
         'is_confidential': isConfidential,
+        'priority': priority,
+        'task_status': ?taskStatus,
         'sticker_code': ?stickerCode,
         'attachment': ?attachmentJson,
         'flex_payload': ?effectiveFlex,
@@ -458,6 +471,64 @@ class ApiService {
               : decoded)
         : <String, dynamic>{};
     return ChatMessage.fromJson(map);
+  }
+
+  Future<ChatMessage> updateTaskAction(String messageId, String action) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/messages/$messageId/task-action'),
+      headers: _headers,
+      body: jsonEncode({'action': action}),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('อัปเดตสถานะงานไม่สำเร็จ (${res.statusCode})');
+    }
+    final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+    final map = decoded is Map<String, dynamic>
+        ? (decoded['message'] is Map<String, dynamic>
+              ? decoded['message'] as Map<String, dynamic>
+              : decoded)
+        : <String, dynamic>{};
+    return ChatMessage.fromJson(map);
+  }
+
+  Future<ChatMessage> approveFlexCard(String messageId, String status) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/messages/$messageId/approve-card'),
+      headers: _headers,
+      body: jsonEncode({'status': status}),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('อนุมัติการ์ดไม่สำเร็จ (${res.statusCode})');
+    }
+    final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+    final map = decoded is Map<String, dynamic>
+        ? (decoded['message'] is Map<String, dynamic>
+              ? decoded['message'] as Map<String, dynamic>
+              : decoded)
+        : <String, dynamic>{};
+    return ChatMessage.fromJson(map);
+  }
+
+  Future<Map<String, dynamic>> adminHandoverChats(
+    String fromUserId,
+    String toUserId,
+  ) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/admin/handover'),
+      headers: _headers,
+      body: jsonEncode({
+        'from_user_id': fromUserId,
+        'to_user_id': toUserId,
+      }),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception(
+        'โอนย้ายห้องแชทไม่สำเร็จ (${res.statusCode}): ${utf8.decode(res.bodyBytes)}',
+      );
+    }
+    final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+    if (decoded is Map<String, dynamic>) return decoded;
+    return <String, dynamic>{'status': 'ok'};
   }
 
   Future<void> markConversationRead(String conversationId) async {

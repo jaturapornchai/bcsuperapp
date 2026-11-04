@@ -407,6 +407,10 @@ pub async fn seed_initial_data(state: &AppState) -> Result<(), String> {
                 is_confidential: false,
                 confidential_pin: None,
                 expire_at: None,
+                priority: "normal".to_string(),
+                task_status: None,
+                accepted_by: None,
+                accepted_at: None,
                 created_at: now.clone(),
             },
             MessageDoc {
@@ -436,6 +440,10 @@ pub async fn seed_initial_data(state: &AppState) -> Result<(), String> {
                 is_confidential: true,
                 confidential_pin: None,
                 expire_at: None,
+                priority: "normal".to_string(),
+                task_status: None,
+                accepted_by: None,
+                accepted_at: None,
                 created_at: now.clone(),
             },
             MessageDoc {
@@ -465,6 +473,10 @@ pub async fn seed_initial_data(state: &AppState) -> Result<(), String> {
                 is_confidential: false,
                 confidential_pin: None,
                 expire_at: None,
+                priority: "normal".to_string(),
+                task_status: None,
+                accepted_by: None,
+                accepted_at: None,
                 created_at: now.clone(),
             },
         ];
@@ -480,6 +492,87 @@ pub async fn seed_initial_data(state: &AppState) -> Result<(), String> {
                 doc! { "$addToSet": { "member_ids": "user_ai" } },
             )
             .await;
+    }
+
+    // Ensure urgent task message & approval flex card exist in conv_group_office
+    if msg_coll
+        .find_one(doc! { "_id": "msg_group_urgent_task" })
+        .await
+        .map_err(|e| e.to_string())?
+        .is_none()
+    {
+        let urgent_msg = MessageDoc {
+            id: "msg_group_urgent_task".to_string(),
+            conversation_id: "conv_group_office".to_string(),
+            sender_id: "user_jead".to_string(),
+            sender_name: "ลุงจืด (Super Admin)".to_string(),
+            sender_avatar: "https://ui-avatars.com/api/?name=Jead+Admin&background=06C755&color=fff&bold=true".to_string(),
+            msg_type: "text".to_string(),
+            content: "🚨 งานด่วน: รบกวนฝ่ายขายและบัญชีตรวจสอบใบเสนอราคา QT-2026-0089 และยืนยันการจัดส่งให้ลูกค้าภายในวันนี้ครับ".to_string(),
+            sticker_code: None,
+            attachment: None,
+            flex_payload: None,
+            reply_to: None,
+            read_by: vec![
+                "user_jead".to_string(),
+                "user_somchai".to_string(),
+                "user_nida".to_string(),
+            ],
+            is_unsent: false,
+            is_confidential: false,
+            confidential_pin: None,
+            expire_at: None,
+            priority: "urgent".to_string(),
+            task_status: Some("accepted".to_string()),
+            accepted_by: Some("สมชาย ฝ่ายขาย".to_string()),
+            accepted_at: Some(now.clone()),
+            created_at: now.clone(),
+        };
+        let _ = msg_coll.insert_one(urgent_msg).await;
+    }
+
+    if msg_coll
+        .find_one(doc! { "_id": "msg_group_flex_card" })
+        .await
+        .map_err(|e| e.to_string())?
+        .is_none()
+    {
+        let flex_msg = MessageDoc {
+            id: "msg_group_flex_card".to_string(),
+            conversation_id: "conv_group_office".to_string(),
+            sender_id: "user_somchai".to_string(),
+            sender_name: "สมชาย ฝ่ายขาย".to_string(),
+            sender_avatar: "https://ui-avatars.com/api/?name=Somchai+Sales&background=0288D1&color=fff&bold=true".to_string(),
+            msg_type: "flex_card".to_string(),
+            content: "[ออกใบเสนอราคาด่วน] บจก. สยามซัพพลาย เทรดดิ้ง — 48,150.00 บาท".to_string(),
+            sticker_code: None,
+            attachment: None,
+            flex_payload: Some(serde_json::json!({
+                "app_code": "quick_quotation",
+                "title": "ขออนุมัติใบเสนอราคาด่วน #QT-2026-0089",
+                "color_hex": "#00B900",
+                "heading": "ลูกค้า: บจก. สยามซัพพลาย เทรดดิ้ง",
+                "subtitle": "ชุดระบบ BC Super App Enterprise (รายปี)",
+                "highlight_value": "48,150.00 บาท",
+                "status": "รออนุมัติ",
+                "status_label": "รออนุมัติ"
+            })),
+            reply_to: None,
+            read_by: vec![
+                "user_jead".to_string(),
+                "user_somchai".to_string(),
+            ],
+            is_unsent: false,
+            is_confidential: false,
+            confidential_pin: None,
+            expire_at: None,
+            priority: "normal".to_string(),
+            task_status: None,
+            accepted_by: None,
+            accepted_at: None,
+            created_at: now.clone(),
+        };
+        let _ = msg_coll.insert_one(flex_msg).await;
     }
 
     // 5. Onboard default admin user ("user_jead") so all 1-1 chats & notes exist
@@ -615,6 +708,10 @@ pub async fn ensure_direct_conversation(
         is_confidential: false,
         confidential_pin: None,
         expire_at: None,
+        priority: "normal".to_string(),
+        task_status: None,
+        accepted_by: None,
+        accepted_at: None,
         created_at: now,
     };
 

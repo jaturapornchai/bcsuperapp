@@ -187,6 +187,10 @@ pub struct ReplyInfo {
     pub content: String,
 }
 
+pub fn default_priority() -> String {
+    "normal".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageDoc {
     #[serde(rename = "_id")]
@@ -216,6 +220,14 @@ pub struct MessageDoc {
     pub confidential_pin: Option<String>,
     #[serde(default)]
     pub expire_at: Option<String>,
+    #[serde(default = "default_priority")]
+    pub priority: String,
+    #[serde(default)]
+    pub task_status: Option<String>,
+    #[serde(default)]
+    pub accepted_by: Option<String>,
+    #[serde(default)]
+    pub accepted_at: Option<String>,
     pub created_at: String,
 }
 
@@ -239,6 +251,10 @@ pub struct MessageDto {
     pub is_confidential: bool,
     pub confidential_pin: Option<String>,
     pub expire_at: Option<String>,
+    pub priority: String,
+    pub task_status: Option<String>,
+    pub accepted_by: Option<String>,
+    pub accepted_at: Option<String>,
     pub created_at: String,
 }
 
@@ -267,6 +283,14 @@ impl From<MessageDoc> for MessageDto {
             is_confidential: m.is_confidential,
             confidential_pin: m.confidential_pin,
             expire_at: m.expire_at,
+            priority: if m.priority.is_empty() {
+                "normal".to_string()
+            } else {
+                m.priority
+            },
+            task_status: m.task_status,
+            accepted_by: m.accepted_by,
+            accepted_at: m.accepted_at,
             created_at: m.created_at,
         }
     }

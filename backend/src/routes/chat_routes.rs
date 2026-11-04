@@ -425,6 +425,10 @@ pub async fn create_group_conversation_handler(
         is_confidential: false,
         confidential_pin: None,
         expire_at: None,
+        priority: "normal".to_string(),
+        task_status: None,
+        accepted_by: None,
+        accepted_at: None,
         created_at: now,
     };
     let _ = msg_coll.insert_one(sys_msg).await;
@@ -611,6 +615,8 @@ pub struct SendMessageRequest {
     pub is_confidential: bool,
     pub confidential_pin: Option<String>,
     pub expire_at: Option<String>,
+    pub priority: Option<String>,
+    pub task_status: Option<String>,
 }
 
 pub async fn send_message_handler(
@@ -678,6 +684,20 @@ pub async fn send_message_handler(
     let now = Utc::now().to_rfc3339();
     let msg_id = Uuid::new_v4().to_string();
 
+    let priority = payload
+        .priority
+        .map(|p| p.trim().to_lowercase())
+        .filter(|p| !p.is_empty())
+        .unwrap_or_else(|| "normal".to_string());
+
+    let task_status = if payload.task_status.is_some() {
+        payload.task_status
+    } else if priority == "urgent" {
+        Some("open".to_string())
+    } else {
+        None
+    };
+
     let msg_doc = MessageDoc {
         id: msg_id.clone(),
         conversation_id: conv_id.clone(),
@@ -695,6 +715,10 @@ pub async fn send_message_handler(
         is_confidential: payload.is_confidential,
         confidential_pin: payload.confidential_pin,
         expire_at: payload.expire_at,
+        priority,
+        task_status,
+        accepted_by: None,
+        accepted_at: None,
         created_at: now.clone(),
     };
 
@@ -1215,4 +1239,126 @@ pub async fn delete_note_handler(
         "status": "ok",
         "id": note_id,
     })))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TaskActionRequest {
+    pub action: String, // "accept" | "done" | "reopen"
+}
+
+pub async fn task_action_handler(
+    auth: AuthUser,
+    Path(msg_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<TaskActionRequest>,
+) -> Result<Json<MessageDto>, ApiError> {
+    let users_coll = state.db.collection::<UserDoc>("users");
+    let msg_coll = state.db.collection::<MessageDoc>("messages");
+
+    let user = users_coll
+        .find_one(doc! { "_id": &auth.user_id })
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("ไม่พบข้อมูลผู้ใช้"))?;
+
+    let mut msg = msg_coll
+        .find_one(doc! { "_id": &msg_id })
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("ไม่พบข้อความงานที่ระบุ"))?;
+
+    let now = Utc::now().to_rfc3339();
+    match payload.action.trim().to_lowercase().as_str() {
+        "accept" | "accepted" => {
+            msg.task_status = Some("accepted".to_string());
+            msg.accepted_by = Some(user.display_name);
+            msg.accepted_at = Some(now);
+        }
+        "done" | "complete" | "completed" => {
+            msg.task_status = Some("done".to_string());
+            msg.accepted_by = Some(user.display_name);
+            msg.accepted_at = Some(now);
+        }
+        "reopen" | "open" => {
+            msg.task_status = Some("open".to_string());
+            msg.accepted_by = None;
+            msg.accepted_at = None;
+        }
+        _ => {
+            return Err(ApiError::bad_request("คำสั่ง action ไม่ถูกต้อง (รองรับ accept, done, reopen)"));
+        }
+    }
+
+    msg_coll
+        .replace_one(doc! { "_id": &msg_id }, &msg)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+
+    let dto = MessageDto::from(msg);
+    state.ws_hub.broadcast_event(json!({
+        "event": "message_updated",
+        "conversation_id": dto.conversation_id,
+        "message": dto,
+    }));
+
+    Ok(Json(dto))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ApproveCardRequest {
+    pub status: String, // "อนุมัติแล้ว" | "ไม่อนุมัติ"
+    pub comment: Option<String>,
+}
+
+pub async fn approve_card_handler(
+    auth: AuthUser,
+    Path(msg_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<ApproveCardRequest>,
+) -> Result<Json<MessageDto>, ApiError> {
+    let users_coll = state.db.collection::<UserDoc>("users");
+    let msg_coll = state.db.collection::<MessageDoc>("messages");
+
+    let user = users_coll
+        .find_one(doc! { "_id": &auth.user_id })
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("ไม่พบข้อมูลผู้ใช้"))?;
+
+    let mut msg = msg_coll
+        .find_one(doc! { "_id": &msg_id })
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("ไม่พบการ์ดข้อความที่ระบุ"))?;
+
+    let now = Utc::now().to_rfc3339();
+    let status_clean = payload.status.trim().to_string();
+
+    let mut flex = msg.flex_payload.take().unwrap_or_else(|| json!({}));
+    if let Some(obj) = flex.as_object_mut() {
+        obj.insert("status".to_string(), json!(status_clean));
+        obj.insert("status_label".to_string(), json!(status_clean));
+        obj.insert("approved_by".to_string(), json!(user.display_name));
+        obj.insert("approved_at".to_string(), json!(now));
+        if let Some(ref c) = payload.comment {
+            if !c.trim().is_empty() {
+                obj.insert("approval_comment".to_string(), json!(c.trim()));
+            }
+        }
+    }
+    msg.flex_payload = Some(flex);
+
+    msg_coll
+        .replace_one(doc! { "_id": &msg_id }, &msg)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+
+    let dto = MessageDto::from(msg);
+    state.ws_hub.broadcast_event(json!({
+        "event": "message_updated",
+        "conversation_id": dto.conversation_id,
+        "message": dto,
+    }));
+
+    Ok(Json(dto))
 }

@@ -9,12 +9,24 @@
 
 ---
 
-## ภาพหน้าจอระบบจริง (Live Application Screenshots)
+## ภาพหน้าจอมือถือจริง (Mobile Application Screenshots — Android & iOS)
+
+| 1. เข้าสู่ระบบด้วย Gmail (Mobile) | 2. รายการแชท & โฟลเดอร์งาน (Mobile) | 3. ห้องแชท LINE + รับงาน + AI (Mobile) |
+| :---: | :---: | :---: |
+| ![Mobile Login](docs/screenshots/mobile_01_login.png) | ![Mobile Chats List](docs/screenshots/mobile_02_chats_list.png) | ![Mobile Chat Room](docs/screenshots/mobile_06_chat_room.png) |
+
+| 4. หน้าหลัก โปรไฟล์ & QR Code (Mobile) | 5. ศูนย์บริการเสริม Mini-Apps (Mobile) | 6. หลังบ้าน Admin & โอนงาน AI (Mobile) |
+| :---: | :---: | :---: |
+| ![Mobile Home](docs/screenshots/mobile_03_home_friends.png) | ![Mobile Mini Apps](docs/screenshots/mobile_04_mini_apps.png) | ![Mobile Admin](docs/screenshots/mobile_05_admin_ai.png) |
+
+---
+
+## ภาพหน้าจอคอมพิวเตอร์และเว็บจริง (Desktop & Web Split-View Screenshots)
 
 ### 1. หน้าเข้าสู่ระบบด้วยบัญชี Gmail & สลับบัญชีองค์กรด่วน
 ![1. หน้าเข้าสู่ระบบด้วยบัญชี Gmail](docs/screenshots/01_login_screen.png)
 
-### 2. ห้องแชทสไตล์ LINE PC Split-View + สถานะอ่านแล้ว + โหมดความลับ + สมองกล DeepSeek AI
+### 2. ห้องแชทสไตล์ LINE PC Split-View + ปุ่มกดรับงาน + อนุมัติการ์ดในแชท + สมองกล DeepSeek AI
 ![2. ห้องแชทสไตล์ LINE + DeepSeek AI + โหมดความลับ](docs/screenshots/02_chat_room_screen.png)
 
 ### 3. หน้าหลัก (โปรไฟล์องค์กร, ตั้งค่า BC ID, QR Code, รายชื่อเพื่อน & กลุ่ม)
@@ -23,7 +35,7 @@
 ### 4. ศูนย์รวมบริการเสริม Super App (Mini-Apps Center — แก้ไขได้โดยไม่ต้องอัปเดตแอป)
 ![4. ศูนย์รวมบริการเสริม Mini-Apps](docs/screenshots/04_mini_apps_screen.png)
 
-### 5. ระบบหลังบ้าน (Admin Backoffice & ตั้งค่าสมองกล DeepSeek AI ประจำองค์กร)
+### 5. ระบบหลังบ้าน (Admin Backoffice, ตั้งค่า DeepSeek AI, และโอนย้ายงานเมื่อพนักงานลาออก)
 ![5. ระบบหลังบ้าน Admin Backoffice & DeepSeek AI](docs/screenshots/05_admin_backoffice_screen.png)
 
 ### 6. หน้าจอระบบเสริม WebView จริงพร้อม SSO Token & ส่งการ์ดเข้าห้องแชท

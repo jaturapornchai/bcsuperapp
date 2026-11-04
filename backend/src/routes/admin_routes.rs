@@ -383,6 +383,10 @@ pub async fn admin_broadcast_handler(
                 is_confidential: false,
                 confidential_pin: None,
                 expire_at: None,
+                priority: "normal".to_string(),
+                task_status: None,
+                accepted_by: None,
+                accepted_at: None,
                 created_at: now.clone(),
             };
 
@@ -415,5 +419,49 @@ pub async fn admin_broadcast_handler(
     Ok(Json(json!({
         "status": "ok",
         "sent_count": sent_count,
+    })))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HandoverRequest {
+    pub from_user_id: String,
+    pub to_user_id: String,
+}
+
+pub async fn admin_handover_handler(
+    _auth: AuthUser,
+    State(state): State<AppState>,
+    Json(payload): Json<HandoverRequest>,
+) -> Result<Json<Value>, ApiError> {
+    let from_id = payload.from_user_id.trim();
+    let to_id = payload.to_user_id.trim();
+    if from_id.is_empty() || to_id.is_empty() {
+        return Err(ApiError::bad_request("กรุณาระบุรหัสพนักงานเดิมและผู้รับผิดชอบคนใหม่"));
+    }
+
+    let conv_coll = state.db.collection::<ConversationDoc>("conversations");
+    let cursor = conv_coll
+        .find(doc! { "member_ids": from_id })
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut convs: Vec<ConversationDoc> = cursor
+        .try_collect()
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+
+    let briefing_text = "🔄 [AI Handover Briefing] โอนย้ายการดูแลห้องแชทจากพนักงานเดิมให้ผู้รับผิดชอบคนใหม่เรียบร้อยแล้ว สามารถเปิดดูประวัติแชทและคลังไฟล์ MinIO ย้อนหลังได้ครบ 100%";
+    let mut count = 0usize;
+
+    for conv in &mut convs {
+        if !conv.member_ids.iter().any(|m| m == to_id) {
+            conv.member_ids.push(to_id.to_string());
+        }
+        let _ = crate::routes::ai_routes::insert_ai_message(&state, conv, briefing_text).await;
+        count += 1;
+    }
+
+    Ok(Json(json!({
+        "transferred_conversations": count,
+        "status": "ok",
     })))
 }

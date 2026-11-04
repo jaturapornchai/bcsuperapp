@@ -394,4 +394,74 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
     let ai_settings: Value = serde_json::from_slice(&body_bytes).unwrap();
     assert!(ai_settings.get("api_key").is_none());
     assert_eq!(ai_settings["model"], "deepseek-chat");
+
+    // 10. Test Urgent Task Action, Approve Card, and Admin Handover
+    let res = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/messages/msg_group_urgent_task/task-action")
+                .header("authorization", format!("Bearer {}", token))
+                .header("content-type", "application/json")
+                .body(Body::from(json!({ "action": "done" }).to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let body_bytes = axum::body::to_bytes(res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let updated_task: Value = serde_json::from_slice(&body_bytes).unwrap();
+    assert_eq!(updated_task["task_status"], "done");
+
+    let res = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/messages/msg_group_flex_card/approve-card")
+                .header("authorization", format!("Bearer {}", token))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({ "status": "อนุมัติแล้ว", "comment": "อนุมัติด่วน" }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let body_bytes = axum::body::to_bytes(res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let approved_card: Value = serde_json::from_slice(&body_bytes).unwrap();
+    assert_eq!(approved_card["flex_payload"]["status"], "อนุมัติแล้ว");
+
+    let res = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/admin/handover")
+                .header("authorization", format!("Bearer {}", token))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "from_user_id": "user_somchai",
+                        "to_user_id": "user_nida"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let body_bytes = axum::body::to_bytes(res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let handover_res: Value = serde_json::from_slice(&body_bytes).unwrap();
+    assert_eq!(handover_res["status"], "ok");
+    assert!(handover_res["transferred_conversations"].as_u64().unwrap() >= 1);
 }

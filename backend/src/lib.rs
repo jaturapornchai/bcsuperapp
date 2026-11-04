@@ -20,7 +20,7 @@ use crate::{
     routes::{
         admin_routes::{
             admin_broadcast_handler, admin_create_mini_app_handler,
-            admin_delete_mini_app_handler, admin_list_mini_apps_handler,
+            admin_delete_mini_app_handler, admin_handover_handler, admin_list_mini_apps_handler,
             admin_list_users_handler, admin_overview_handler, admin_update_mini_app_handler,
             admin_update_user_role_handler,
         },
@@ -33,12 +33,12 @@ use crate::{
             me_handler, search_users_handler, update_profile_handler,
         },
         chat_routes::{
-            clear_confidential_messages_handler, conversation_vault_handler,
+            approve_card_handler, clear_confidential_messages_handler, conversation_vault_handler,
             create_direct_conversation_handler, create_group_conversation_handler,
             create_note_handler, delete_note_handler, list_conversations_handler,
             list_messages_handler, list_notes_handler, mark_read_handler, pin_message_handler,
             purge_message_handler, search_messages_handler, send_message_handler,
-            unsend_message_handler, update_conversation_meta_handler,
+            task_action_handler, unsend_message_handler, update_conversation_meta_handler,
         },
         file_routes::{get_file_handler, upload_handler},
         miniapp_routes::{list_active_mini_apps_handler, serve_miniapp_html_handler},
@@ -130,6 +130,8 @@ pub fn create_router(state: AppState) -> Router {
             "/api/messages/:id/purge",
             delete(purge_message_handler).post(purge_message_handler),
         )
+        .route("/api/messages/:id/task-action", post(task_action_handler))
+        .route("/api/messages/:id/approve-card", post(approve_card_handler))
         .route(
             "/api/conversations/:id/vault",
             get(conversation_vault_handler),
@@ -170,6 +172,7 @@ pub fn create_router(state: AppState) -> Router {
             put(admin_update_mini_app_handler).delete(admin_delete_mini_app_handler),
         )
         .route("/api/admin/broadcast", post(admin_broadcast_handler))
+        .route("/api/admin/handover", post(admin_handover_handler))
         // WebSocket
         .route("/ws", get(ws_handler))
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024))

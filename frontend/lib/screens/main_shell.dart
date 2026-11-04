@@ -1904,30 +1904,40 @@ class _MainShellState extends State<MainShell> {
   // ---------------------------------------------------------------------------
   Widget _buildMiniAppsCenterTab() {
     final activeApps = _miniApps.where((m) => m.enabled).toList();
+    final isCompact = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceBg,
       appBar: AppBar(
-        title: const Text('ศูนย์บริการเสริม BC Super App (Mini-Apps)'),
+        title: const Text(
+          'บริการเสริม BC Super App',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 12),
             child: Center(
               child: OutlinedButton.icon(
                 onPressed: () => setState(() => _selectedIndex = 4),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  minimumSize: const Size(0, 34),
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                 ),
-                icon: const Icon(Icons.settings_suggest_rounded, size: 17),
-                label: const Text('เพิ่ม/แก้ไขระบบเสริมหลังบ้าน'),
+                icon: const Icon(Icons.settings_suggest_rounded, size: 16),
+                label: Text(
+                  isCompact ? 'จัดการ' : 'เพิ่ม/แก้ไขระบบเสริมหลังบ้าน',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
             ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(isCompact ? 14 : 24),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1080),
@@ -2104,25 +2114,37 @@ class _MainShellState extends State<MainShell> {
   // TAB 3: BC KEEP (คลังบันทึกส่วนตัวถาวร ซิงค์ตาม Gmail)
   // ---------------------------------------------------------------------------
   Widget _buildKeepVaultTab() {
+    final isCompact = MediaQuery.of(context).size.width < 600;
     return Scaffold(
       backgroundColor: AppTheme.surfaceBg,
       appBar: AppBar(
-        title: const Text('BC Keep — คลังบันทึกส่วนตัวถาวรบนคลาวด์'),
+        title: const Text(
+          'BC Keep — คลังบันทึกถาวร',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 12),
             child: Center(
               child: ElevatedButton.icon(
                 onPressed: _showCreateKeepNoteDialog,
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('สร้างบันทึก Keep ใหม่'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(0, 34),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                ),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: Text(
+                  isCompact ? 'สร้างโน้ต' : 'สร้างบันทึก Keep ใหม่',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
             ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(isCompact ? 14 : 24),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1020),
@@ -2316,11 +2338,16 @@ class _MainShellState extends State<MainShell> {
   // ---------------------------------------------------------------------------
   Widget _buildAdminBackofficeTab() {
     final ov = _adminOverview;
+    final isCompact = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceBg,
       appBar: AppBar(
-        title: const Text('ระบบจัดการหลังบ้าน (BC Super App Admin Backoffice)'),
+        title: const Text(
+          'ระบบจัดการหลังบ้าน (Admin Backoffice)',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           IconButton(
             onPressed: _loadAdminDataQuietly,
@@ -2330,7 +2357,7 @@ class _MainShellState extends State<MainShell> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(isCompact ? 14 : 24),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1120),
@@ -2374,9 +2401,13 @@ class _MainShellState extends State<MainShell> {
                 _buildAiBrainSettingsCard(),
                 const SizedBox(height: 24),
 
+                // Section 0.5: 1-Click Employee Handover + AI Briefing
+                _buildEmployeeHandoverCard(),
+                const SizedBox(height: 24),
+
                 // Section 1: Mini-App Manager
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(isCompact ? 14 : 20),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(18),
@@ -2385,38 +2416,35 @@ class _MainShellState extends State<MainShell> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        alignment: WrapAlignment.spaceBetween,
                         children: [
-                          const Icon(
-                            Icons.dashboard_customize_rounded,
-                            color: AppTheme.lineEmerald,
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'จัดการระบบเสริม WebView (Dynamic Mini-App Manager)',
+                          const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.dashboard_customize_rounded,
+                                color: AppTheme.lineEmerald,
+                              ),
+                              SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'จัดการระบบเสริม WebView (Dynamic Mini-App)',
                                   style: TextStyle(
-                                    fontSize: 16.5,
+                                    fontSize: 15.5,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                                Text(
-                                  'เพิ่ม แก้ไข หรือเปิด/ปิดระบบเสริมได้ทันทีโดยไม่ต้องอัปเดตแอปพลิเคชัน',
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    color: AppTheme.slateMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                           ElevatedButton.icon(
                             onPressed: () => _showMiniAppFormDialog(),
-                            icon: const Icon(Icons.add_rounded, size: 18),
+                            icon: const Icon(Icons.add_rounded, size: 17),
                             label: const Text('เพิ่มบริการเสริมใหม่'),
                           ),
                         ],
@@ -2433,8 +2461,8 @@ class _MainShellState extends State<MainShell> {
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: Container(
-                              width: 40,
-                              height: 40,
+                              width: 38,
+                              height: 38,
                               decoration: BoxDecoration(
                                 color: color,
                                 borderRadius: BorderRadius.circular(10),
@@ -2442,26 +2470,26 @@ class _MainShellState extends State<MainShell> {
                               child: Icon(
                                 AppTheme.resolveMiniAppIcon(app.icon),
                                 color: Colors.white,
-                                size: 20,
+                                size: 19,
                               ),
                             ),
-                            title: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                            title: Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
                                   app.title,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 14,
+                                    fontSize: 13.5,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
                                 PillBadge(
                                   text: app.category,
                                   backgroundColor: AppTheme.surfaceBg,
                                   textColor: AppTheme.slateBody,
                                 ),
-                                const SizedBox(width: 6),
                                 PillBadge(
                                   text: app.enabled
                                       ? 'เปิดใช้งาน'
@@ -2476,7 +2504,9 @@ class _MainShellState extends State<MainShell> {
                               ],
                             ),
                             subtitle: Text(
-                              'รหัส: ${app.code} · URL: ${app.url} · ${app.subtitle}',
+                              'รหัส: ${app.code} · ${app.subtitle}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontSize: 12),
                             ),
                             trailing: Row(
@@ -2497,19 +2527,11 @@ class _MainShellState extends State<MainShell> {
                                 IconButton(
                                   onPressed: () =>
                                       _showMiniAppFormDialog(existing: app),
+                                  visualDensity: VisualDensity.compact,
                                   tooltip: 'แก้ไขบริการเสริม',
-                                  icon: const Icon(Icons.edit_outlined),
-                                ),
-                                IconButton(
-                                  onPressed: () async {
-                                    await ApiService.instance
-                                        .deleteAdminMiniApp(app.id);
-                                    await _loadAdminDataQuietly();
-                                  },
-                                  tooltip: 'ลบบริการเสริม',
                                   icon: const Icon(
-                                    Icons.delete_outline_rounded,
-                                    color: AppTheme.dangerRed,
+                                    Icons.edit_outlined,
+                                    size: 19,
                                   ),
                                 ),
                               ],
@@ -2720,7 +2742,7 @@ class _MainShellState extends State<MainShell> {
     return StatefulBuilder(
       builder: (ctx, setCardState) {
         return Container(
-          padding: const EdgeInsets.all(22),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
@@ -2736,8 +2758,8 @@ class _MainShellState extends State<MainShell> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF6D28D9), Color(0xFF2563EB)],
@@ -2747,7 +2769,7 @@ class _MainShellState extends State<MainShell> {
                     child: const Icon(
                       Icons.psychology_rounded,
                       color: Colors.white,
-                      size: 24,
+                      size: 22,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2755,18 +2777,19 @@ class _MainShellState extends State<MainShell> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             const Text(
                               '🧠 ตั้งค่าสมองกล DeepSeek AI ประจำองค์กร',
                               style: TextStyle(
-                                fontSize: 16.5,
+                                fontSize: 15.5,
                                 fontWeight: FontWeight.w800,
                                 color: AppTheme.slateDark,
                               ),
                             ),
-                            const SizedBox(width: 8),
                             PillBadge(
                               text:
                                   'API Key: ${_aiSettings.maskedKey.isNotEmpty ? _aiSettings.maskedKey : "พร้อมใช้งาน"}',
@@ -2780,7 +2803,7 @@ class _MainShellState extends State<MainShell> {
                         const Text(
                           'ทำหน้าที่เป็นผู้ช่วยอัจฉริยะให้พนักงานทุกคนและทุกกลุ่มแชท (@ai ถามในกลุ่ม, สรุปแชท & แกะงาน, เกลาคำพูด)',
                           style: TextStyle(
-                            fontSize: 12.5,
+                            fontSize: 12,
                             color: AppTheme.slateMuted,
                           ),
                         ),
@@ -2789,9 +2812,11 @@ class _MainShellState extends State<MainShell> {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   const Text(
                     'เลือกโมเดล DeepSeek:',
@@ -2801,32 +2826,29 @@ class _MainShellState extends State<MainShell> {
                       color: AppTheme.slateDark,
                     ),
                   ),
-                  const SizedBox(width: 12),
                   ChoiceChip(
                     selected: selectedModel == 'deepseek-chat',
-                    label: const Text('deepseek-chat (DeepSeek-V3 เร็ว/แม่นยำ)'),
+                    label: const Text('deepseek-chat (DeepSeek-V3)'),
                     onSelected: (_) =>
                         setCardState(() => selectedModel = 'deepseek-chat'),
                   ),
-                  const SizedBox(width: 8),
                   ChoiceChip(
                     selected: selectedModel == 'deepseek-reasoner',
-                    label: const Text(
-                      'deepseek-reasoner (DeepSeek-R1 คิดวิเคราะห์ลึก)',
-                    ),
+                    label: const Text('deepseek-reasoner (DeepSeek-R1)'),
                     onSelected: (_) =>
                         setCardState(() => selectedModel = 'deepseek-reasoner'),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               TextField(
                 controller: apiKeyCtrl,
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText:
-                      'อัปเดต DeepSeek API Key (ซ่อนรหัสปลอดภัย · ปัจจุบัน: ${_aiSettings.maskedKey})',
-                  hintText: 'เว้นว่างไว้หากใช้ API Key เดิมที่ตั้งค่าแล้วบนเซิร์ฟเวอร์',
+                      'อัปเดต DeepSeek API Key (ปัจจุบัน: ${_aiSettings.maskedKey})',
+                  hintText:
+                      'เว้นว่างไว้หากใช้ API Key เดิมที่ตั้งค่าแล้วบนเซิร์ฟเวอร์',
                   prefixIcon: const Icon(Icons.key_rounded, size: 18),
                 ),
               ),
@@ -2836,7 +2858,7 @@ class _MainShellState extends State<MainShell> {
                 maxLines: 3,
                 decoration: const InputDecoration(
                   labelText:
-                      'System Prompt ประจำองค์กร (กำหนดบทบาทและความรู้ของ AI ให้เหมาะกับบริษัท)',
+                      'System Prompt ประจำองค์กร (กำหนดบทบาทและความรู้ของ AI)',
                   prefixIcon: Icon(Icons.tune_rounded, size: 18),
                 ),
               ),
@@ -2884,6 +2906,223 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
+  Widget _buildEmployeeHandoverCard() {
+    final availableUsers = _adminUsers.isNotEmpty ? _adminUsers : _friends;
+    String? fromUserId = availableUsers.length > 1
+        ? availableUsers[1].id
+        : (availableUsers.isNotEmpty ? availableUsers.first.id : null);
+    String? toUserId = availableUsers.isNotEmpty
+        ? availableUsers.first.id
+        : null;
+    bool isTransferring = false;
+    String? handoverResultNote;
+
+    return StatefulBuilder(
+      builder: (ctx, setCardState) {
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppTheme.workBlue.withValues(alpha: 0.35),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDBEAFE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.swap_horiz_rounded,
+                      color: AppTheme.workBlue,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '🔄 โอนย้ายห้องแชทและประวัติลูกค้าเมื่อพนักงานลาออก (1-Click Handover + AI Briefing)',
+                          style: TextStyle(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.slateDark,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'โอนสิทธิ์ห้องแชทลูกค้าทั้งหมดให้พนักงานคนใหม่ พร้อมให้สมองกล DeepSeek AI สรุปงานค้างส่งเข้าห้องทันที',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.slateMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (availableUsers.isNotEmpty) ...[
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(
+                      width: 310,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: fromUserId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'พนักงานต้นทาง (ผู้ส่งมอบงาน / ลาออก)',
+                          prefixIcon: Icon(
+                            Icons.person_remove_outlined,
+                            size: 18,
+                          ),
+                        ),
+                        items: availableUsers.map((u) {
+                          return DropdownMenuItem<String>(
+                            value: u.id,
+                            child: Text(
+                              '${u.displayName} (${u.department})',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (v) => setCardState(() => fromUserId = v),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 310,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: toUserId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'พนักงานผู้รับมอบงานคนใหม่',
+                          prefixIcon: Icon(
+                            Icons.person_add_alt_1_rounded,
+                            size: 18,
+                          ),
+                        ),
+                        items: availableUsers.map((u) {
+                          return DropdownMenuItem<String>(
+                            value: u.id,
+                            child: Text(
+                              '${u.displayName} (${u.department})',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (v) => setCardState(() => toUserId = v),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed: isTransferring
+                        ? null
+                        : () async {
+                            if (fromUserId == null || toUserId == null) return;
+                            setCardState(() => isTransferring = true);
+                            try {
+                              final res = await ApiService.instance
+                                  .adminHandoverChats(fromUserId!, toUserId!);
+                              final count =
+                                  res['transferred_rooms'] ??
+                                  res['transferred_count'] ??
+                                  res['rooms_count'] ??
+                                  1;
+                              final summary =
+                                  (res['ai_briefing'] ??
+                                          res['summary'] ??
+                                          'โอนย้ายห้องแชทและส่งสรุปงานค้างด้วย DeepSeek AI เรียบร้อยแล้ว')
+                                      .toString();
+                              setCardState(() {
+                                isTransferring = false;
+                                handoverResultNote =
+                                    '✅ โอนย้ายสำเร็จ $count ห้องแชท · $summary';
+                              });
+                              await _refreshConversationsAndFriends();
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: AppTheme.deepEmerald,
+                                  content: Text(
+                                    'โอนย้ายห้องแชทสำเร็จ ($count ห้อง) พร้อมส่ง AI Briefing เรียบร้อยแล้ว!',
+                                  ),
+                                ),
+                              );
+                            } catch (e) {
+                              setCardState(() => isTransferring = false);
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('โอนย้ายไม่สำเร็จ: $e'),
+                                ),
+                              );
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.workBlue,
+                    ),
+                    icon: isTransferring
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.published_with_changes_rounded, size: 17),
+                    label: const Text(
+                      'โอนย้ายห้องแชท & สร้างสรุปงานด้วย AI ทันที',
+                    ),
+                  ),
+                ),
+                if (handoverResultNote != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.softEmerald,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      handoverResultNote!,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.deepEmerald,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildBroadcastCard() {
     final titleCtrl = TextEditingController(
       text: 'แจ้งอัปเดตระบบเสริม BC Super App ประจำสัปดาห์',
@@ -2908,9 +3147,11 @@ class _MainShellState extends State<MainShell> {
             children: [
               Icon(Icons.campaign_rounded, color: AppTheme.warningAmber),
               SizedBox(width: 8),
-              Text(
-                'ส่งประกาศ Broadcast เข้าห้อง BC Official OA ถึงผู้ใช้ทุกคน',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              Expanded(
+                child: Text(
+                  'ส่งประกาศ Broadcast เข้าห้อง BC Official OA ถึงผู้ใช้ทุกคน',
+                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+                ),
               ),
             ],
           ),
@@ -2970,9 +3211,11 @@ class _MainShellState extends State<MainShell> {
             children: [
               Icon(Icons.verified_user_rounded, color: AppTheme.workBlue),
               SizedBox(width: 8),
-              Text(
-                'รายชื่อผู้ใช้งานที่ซิงค์ด้วยบัญชี Gmail (User Management)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              Expanded(
+                child: Text(
+                  'รายชื่อผู้ใช้งานที่ซิงค์ด้วยบัญชี Gmail (User Management)',
+                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+                ),
               ),
             ],
           ),
@@ -2991,8 +3234,10 @@ class _MainShellState extends State<MainShell> {
                   avatarUrl: u.avatarUrl,
                   radius: 19,
                 ),
-                title: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                title: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       u.displayName,
@@ -3001,7 +3246,6 @@ class _MainShellState extends State<MainShell> {
                         fontSize: 13.5,
                       ),
                     ),
-                    const SizedBox(width: 8),
                     PillBadge(
                       text: u.department,
                       backgroundColor: const Color(0xFFE0E7FF),
@@ -3011,6 +3255,8 @@ class _MainShellState extends State<MainShell> {
                 ),
                 subtitle: Text(
                   '${u.email} · BC ID: @${u.bcId}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 12),
                 ),
                 trailing: PillBadge(
