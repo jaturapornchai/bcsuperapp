@@ -1,0 +1,35 @@
+# Windows can't build Apple targets, so iOS/macOS are built on a macOS runner.
+name: Build iOS & macOS
+
+on:
+  push:
+    branches: [main]
+    paths: ['frontend/**', '.github/workflows/build-apple.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.9
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
+      - run: flutter build macos --release
+      - name: Package builds
+        run: |
+          ditto -c -k --keepParent build/ios/iphoneos/Runner.app bcapp-ios-unsigned.zip
+          ditto -c -k --keepParent build/macos/Build/Products/Release/frontend.app bcapp-macos.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bcapp-apple-builds
+          path: |
+            frontend/bcapp-ios-unsigned.zip
+            frontend/bcapp-macos.zip
