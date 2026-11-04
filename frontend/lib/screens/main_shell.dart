@@ -11,6 +11,7 @@ import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import 'chat_room_screen.dart';
 import 'mini_app_runner_screen.dart';
+import 'notification_settings_sheet.dart';
 
 class MainShell extends StatefulWidget {
   final AppUser currentUser;
@@ -1786,6 +1787,11 @@ class _MainShellState extends State<MainShell> {
                   textColor: Colors.white,
                 ),
               const Spacer(),
+              IconButton(
+                onPressed: () => showNotificationSettingsSheet(context),
+                tooltip: 'เสียงและการแจ้งเตือน',
+                icon: const Icon(Icons.notifications_rounded),
+              ),
               IconButton(
                 onPressed: () => _showCreateGroupDialog(isWide: isWide),
                 tooltip: 'สร้างกลุ่มแชทใหม่',

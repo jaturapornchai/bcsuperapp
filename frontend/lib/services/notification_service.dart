@@ -1,31 +1,74 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/models.dart';
 
-/// OS pop-up alert (sender + preview + system sound) for incoming chat
-/// messages while the app is running. Fed by MainShell's WebSocket listener;
-/// tapping a pop-up opens that room.
+/// Which kind of message an alert is for; each kind has its own sound.
+enum AlertKind {
+  normal('ข้อความทั่วไป', 'ting'),
+  urgent('ข้อความด่วน ⚡', 'urgent'),
+  ai('BC AI ตอบกลับ', 'robot');
+
+  const AlertKind(this.label, this.defaultSound);
+  final String label;
+  final String defaultSound;
+}
+
+/// OS pop-up alert (sender + preview) plus the user's chosen sound for
+/// incoming chat messages while the app is running. Fed by MainShell's
+/// WebSocket listener; tapping a pop-up opens that room. Settings are kept
+/// per device.
 // ponytail: no push when the app is closed — that needs FCM/APNs credentials.
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
 
+  /// Sound codes = files in assets/sounds/ (made by tool/make_alert_sounds.mjs).
+  static const List<({String code, String name})> sounds = [
+    (code: 'ting', name: 'ติ๊ง'),
+    (code: 'pop', name: 'ป๊อป'),
+    (code: 'chime', name: 'กริ๊งสองจังหวะ'),
+    (code: 'marimba', name: 'มาริมบา'),
+    (code: 'bell', name: 'ระฆังใส'),
+    (code: 'soft', name: 'นุ่มนวล'),
+    (code: 'urgent', name: 'ด่วนมาก'),
+    (code: 'robot', name: 'หุ่นยนต์ AI'),
+    (code: noSound, name: 'ไม่มีเสียง'),
+  ];
+  static const String noSound = 'none';
+  static const String aiUserId = 'user_ai';
+
+  static const String _prefPopup = 'bcapp_alert_popup';
+  static const String _prefSound = 'bcapp_alert_sound';
+  static const String _prefSoundOf = 'bcapp_alert_sound_';
+
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  final AudioPlayer _player = AudioPlayer();
   bool _initialized = false;
 
+  bool popupEnabled = true;
+  bool soundEnabled = true;
+  final Map<AlertKind, String> _soundOf = {
+    for (final k in AlertKind.values) k: k.defaultSound,
+  };
+
   /// Room currently on screen (set by ChatRoomScreen); its messages do not
-  /// pop up while the app window is in front.
+  /// alert while the app window is in front.
   String? openConversationId;
 
   /// Called with the conversation id when the user taps a pop-up.
   void Function(String conversationId)? onOpenConversation;
 
+  String soundOf(AlertKind kind) => _soundOf[kind]!;
+
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
+    await _loadSettings();
     try {
       await _plugin.initialize(
         settings: const InitializationSettings(
@@ -50,6 +93,46 @@ class NotificationService {
     }
   }
 
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    popupEnabled = prefs.getBool(_prefPopup) ?? true;
+    soundEnabled = prefs.getBool(_prefSound) ?? true;
+    final known = sounds.map((s) => s.code).toSet();
+    for (final k in AlertKind.values) {
+      final saved = prefs.getString('$_prefSoundOf${k.name}');
+      if (saved != null && known.contains(saved)) _soundOf[k] = saved;
+    }
+  }
+
+  Future<void> setPopupEnabled(bool value) async {
+    popupEnabled = value;
+    await (await SharedPreferences.getInstance()).setBool(_prefPopup, value);
+  }
+
+  Future<void> setSoundEnabled(bool value) async {
+    soundEnabled = value;
+    await (await SharedPreferences.getInstance()).setBool(_prefSound, value);
+  }
+
+  Future<void> setSoundOf(AlertKind kind, String code) async {
+    _soundOf[kind] = code;
+    await (await SharedPreferences.getInstance()).setString(
+      '$_prefSoundOf${kind.name}',
+      code,
+    );
+  }
+
+  /// Plays a sound by code (also used for the preview in settings).
+  Future<void> playSound(String code) async {
+    if (code == noSound) return;
+    try {
+      await _player.stop();
+      await _player.play(AssetSource('sounds/$code.wav'));
+    } catch (e) {
+      debugPrint('alert sound failed: $e');
+    }
+  }
+
   Future<void> _requestPermission() async {
     if (kIsWeb) {
       await _plugin
@@ -67,7 +150,7 @@ class NotificationService {
     // iOS/macOS ask on initialize (DarwinInitializationSettings defaults).
   }
 
-  /// Shows a pop-up for a `new_message` WebSocket event when it should alert.
+  /// Alerts for a `new_message` WebSocket event when it should.
   Future<void> handleWsEvent(
     Map<String, dynamic> event, {
     required String myUserId,
@@ -81,45 +164,65 @@ class NotificationService {
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
     if (appInFront && msg.conversationId == openConversationId) return;
     final alert = describe(msg, myUserId: myUserId, room: room);
-    if (alert == null || !_initialized) return;
+    if (alert == null) return;
 
-    final silent = msg.priority == 'silent';
-    try {
-      await _plugin.show(
-        // One pop-up per room: a newer message replaces the older one.
+    // The sender's "silent" priority wins over the receiver's sound choice.
+    if (soundEnabled && msg.priority != 'silent') {
+      playSound(soundOf(kindOf(msg)));
+    }
+    if (popupEnabled) {
+      await showPopup(
         id: msg.conversationId.hashCode & 0x7fffffff,
         title: alert.title,
         body: alert.body,
         payload: msg.conversationId,
+      );
+    }
+  }
+
+  /// OS pop-up without its own sound (the app plays the chosen sound).
+  /// One id per room, so a newer message replaces the older pop-up.
+  Future<void> showPopup({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!_initialized) return;
+    try {
+      await _plugin.show(
+        id: id,
+        title: title,
+        body: body,
+        payload: payload,
         notificationDetails: NotificationDetails(
-          android: silent
-              ? const AndroidNotificationDetails(
-                  'chat_silent',
-                  'ข้อความแบบไม่มีเสียง',
-                  channelDescription: 'ข้อความที่ผู้ส่งเลือกส่งแบบเงียบ',
-                  importance: Importance.low,
-                  priority: Priority.low,
-                  playSound: false,
-                )
-              : const AndroidNotificationDetails(
-                  'chat_messages',
-                  'ข้อความแชท',
-                  channelDescription: 'แจ้งเตือนเมื่อมีข้อความใหม่',
-                  importance: Importance.high,
-                  priority: Priority.high,
-                  category: AndroidNotificationCategory.message,
-                ),
-          iOS: DarwinNotificationDetails(presentSound: !silent),
-          macOS: DarwinNotificationDetails(presentSound: !silent),
-          windows: WindowsNotificationDetails(
-            audio: silent ? WindowsNotificationAudio.silent() : null,
+          // New channel id: Android fixes a channel's sound when first made.
+          android: const AndroidNotificationDetails(
+            'chat_alerts',
+            'ข้อความแชท',
+            channelDescription: 'ป๊อปอัปเมื่อมีข้อความใหม่ (เสียงตั้งในแอป)',
+            importance: Importance.high,
+            priority: Priority.high,
+            playSound: false,
+            category: AndroidNotificationCategory.message,
           ),
-          web: WebNotificationDetails(isSilent: silent, renotify: true),
+          iOS: const DarwinNotificationDetails(presentSound: false),
+          macOS: const DarwinNotificationDetails(presentSound: false),
+          windows: WindowsNotificationDetails(
+            audio: WindowsNotificationAudio.silent(),
+          ),
+          web: const WebNotificationDetails(isSilent: true, renotify: true),
         ),
       );
     } catch (e) {
       debugPrint('notification show failed: $e');
     }
+  }
+
+  static AlertKind kindOf(ChatMessage msg) {
+    if (msg.priority == 'urgent') return AlertKind.urgent;
+    if (msg.senderId == aiUserId) return AlertKind.ai;
+    return AlertKind.normal;
   }
 
   /// Title/body for a message, or null when it should not alert
