@@ -9,9 +9,25 @@
 
 ---
 
-## ภาพรวมสถาปัตยกรรมและระบบหลัก (Visual Showcase)
+## ภาพหน้าจอระบบจริง (Live Application Screenshots)
 
-![DeepSeek AI, MinIO Vault & Mini-Apps Showcase](docs/screenshots/architecture_showcase.jpg)
+### 1. หน้าเข้าสู่ระบบด้วยบัญชี Gmail & สลับบัญชีองค์กรด่วน
+![1. หน้าเข้าสู่ระบบด้วยบัญชี Gmail](docs/screenshots/01_login_screen.png)
+
+### 2. ห้องแชทสไตล์ LINE PC Split-View + สถานะอ่านแล้ว + โหมดความลับ + สมองกล DeepSeek AI
+![2. ห้องแชทสไตล์ LINE + DeepSeek AI + โหมดความลับ](docs/screenshots/02_chat_room_screen.png)
+
+### 3. หน้าหลัก (โปรไฟล์องค์กร, ตั้งค่า BC ID, QR Code, รายชื่อเพื่อน & กลุ่ม)
+![3. หน้าหลัก โปรไฟล์ และรายชื่อเพื่อน](docs/screenshots/03_home_friends_screen.png)
+
+### 4. ศูนย์รวมบริการเสริม Super App (Mini-Apps Center — แก้ไขได้โดยไม่ต้องอัปเดตแอป)
+![4. ศูนย์รวมบริการเสริม Mini-Apps](docs/screenshots/04_mini_apps_screen.png)
+
+### 5. ระบบหลังบ้าน (Admin Backoffice & ตั้งค่าสมองกล DeepSeek AI ประจำองค์กร)
+![5. ระบบหลังบ้าน Admin Backoffice & DeepSeek AI](docs/screenshots/05_admin_backoffice_screen.png)
+
+### 6. หน้าจอระบบเสริม WebView จริงพร้อม SSO Token & ส่งการ์ดเข้าห้องแชท
+![6. หน้าจอระบบเสริม WebView จริง](docs/screenshots/06_miniapp_webview_live.png)
 
 ---
 
