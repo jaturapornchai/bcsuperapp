@@ -28,12 +28,119 @@ enum ChatRoomThemeMode {
   }
 }
 
+/// A brand colour set an admin picks to suit the kind of business.
+/// Codes must match THEME_PRESETS in backend/src/routes/admin_routes.rs.
+class ThemePreset {
+  final String code;
+  final String name;
+  final String suitsFor;
+  final Color primary;
+  final Color deep;
+  final Color soft;
+  final Color bubble;
+  final List<Color> gradient;
+
+  const ThemePreset({
+    required this.code,
+    required this.name,
+    required this.suitsFor,
+    required this.primary,
+    required this.deep,
+    required this.soft,
+    required this.bubble,
+    required this.gradient,
+  });
+
+  static const List<ThemePreset> all = [
+    ThemePreset(
+      code: 'emerald',
+      name: 'เขียวมรกต (ค่าเริ่มต้น)',
+      suitsFor: 'สำนักงานทั่วไป องค์กร',
+      primary: Color(0xFF06C755),
+      deep: Color(0xFF00A040),
+      soft: Color(0xFFE8FBF0),
+      bubble: Color(0xFFA8F5B8),
+      gradient: [Color(0xFF12D46B), Color(0xFF02A346)],
+    ),
+    ThemePreset(
+      code: 'finance_blue',
+      name: 'น้ำเงินการเงิน',
+      suitsFor: 'สำนักงานบัญชี การเงิน ประกันภัย',
+      primary: Color(0xFF2563EB),
+      deep: Color(0xFF1D4ED8),
+      soft: Color(0xFFEFF6FF),
+      bubble: Color(0xFFBFDBFE),
+      gradient: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+    ),
+    ThemePreset(
+      code: 'restaurant_orange',
+      name: 'ส้มร้านอาหาร',
+      suitsFor: 'ร้านอาหาร คาเฟ่ เบเกอรี่',
+      primary: Color(0xFFEA580C),
+      deep: Color(0xFFC2410C),
+      soft: Color(0xFFFFF7ED),
+      bubble: Color(0xFFFED7AA),
+      gradient: [Color(0xFFFB923C), Color(0xFFEA580C)],
+    ),
+    ThemePreset(
+      code: 'clinic_teal',
+      name: 'เขียวน้ำทะเลคลินิก',
+      suitsFor: 'คลินิก โรงพยาบาล ร้านขายยา',
+      primary: Color(0xFF0D9488),
+      deep: Color(0xFF0F766E),
+      soft: Color(0xFFF0FDFA),
+      bubble: Color(0xFF99F6E4),
+      gradient: [Color(0xFF14B8A6), Color(0xFF0F766E)],
+    ),
+    ThemePreset(
+      code: 'retail_red',
+      name: 'แดงทับทิมค้าปลีก',
+      suitsFor: 'ร้านค้าปลีก ค้าส่ง มินิมาร์ท',
+      primary: Color(0xFFE11D48),
+      deep: Color(0xFFBE123C),
+      soft: Color(0xFFFFF1F2),
+      bubble: Color(0xFFFECDD3),
+      gradient: [Color(0xFFF43F5E), Color(0xFFBE123C)],
+    ),
+    ThemePreset(
+      code: 'factory_amber',
+      name: 'เหลืองอำพันอุตสาหกรรม',
+      suitsFor: 'โรงงาน ก่อสร้าง ขนส่ง',
+      primary: Color(0xFFD97706),
+      deep: Color(0xFFB45309),
+      soft: Color(0xFFFFFBEB),
+      bubble: Color(0xFFFDE68A),
+      gradient: [Color(0xFFF59E0B), Color(0xFFB45309)],
+    ),
+    ThemePreset(
+      code: 'beauty_pink',
+      name: 'ชมพูความงาม',
+      suitsFor: 'ร้านเสริมสวย สปา แฟชั่น',
+      primary: Color(0xFFDB2777),
+      deep: Color(0xFFBE185D),
+      soft: Color(0xFFFDF2F8),
+      bubble: Color(0xFFFBCFE8),
+      gradient: [Color(0xFFEC4899), Color(0xFFBE185D)],
+    ),
+  ];
+
+  static ThemePreset byCode(String? code) =>
+      all.firstWhere((p) => p.code == code, orElse: () => all.first);
+}
+
 class AppTheme {
-  // Brand Emerald & Executive Slate palette
-  static const Color brandEmerald = Color(0xFF06C755);
-  static const Color deepEmerald = Color(0xFF00A040);
-  static const Color softEmerald = Color(0xFFE8FBF0);
-  static const Color sentBubble = Color(0xFFA8F5B8);
+  // Brand colours follow the business theme the admin picked; the
+  // Executive Slate neutrals below stay fixed.
+  static final ValueNotifier<ThemePreset> preset = ValueNotifier(
+    ThemePreset.all.first,
+  );
+  static void applyPreset(String? code) =>
+      preset.value = ThemePreset.byCode(code);
+
+  static Color get brandPrimary => preset.value.primary;
+  static Color get brandDeep => preset.value.deep;
+  static Color get brandSoft => preset.value.soft;
+  static Color get sentBubble => preset.value.bubble;
   static const Color receivedBubble = Color(0xFFFFFFFF);
 
   static const Color slateDark = Color(0xFF0F172A);
@@ -82,8 +189,8 @@ class AppTheme {
   ];
 
   // Gradients
-  static const LinearGradient brandGradient = LinearGradient(
-    colors: [Color(0xFF12D46B), Color(0xFF02A346)],
+  static LinearGradient get brandGradient => LinearGradient(
+    colors: preset.value.gradient,
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -197,9 +304,9 @@ class AppTheme {
       splashFactory: InkRipple.splashFactory,
       pageTransitionsTheme: transitionsTheme,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: brandEmerald,
-        primary: brandEmerald,
-        secondary: deepEmerald,
+        seedColor: brandPrimary,
+        primary: brandPrimary,
+        secondary: brandDeep,
         surface: cardBg,
         onPrimary: Colors.white,
         onSurface: slateDark,
@@ -248,7 +355,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: const BorderSide(color: brandEmerald, width: 1.6),
+          borderSide: BorderSide(color: brandPrimary, width: 1.6),
         ),
         hintStyle: GoogleFonts.prompt(
           fontSize: 13.5,
@@ -263,7 +370,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: brandEmerald,
+          backgroundColor: brandPrimary,
           foregroundColor: Colors.white,
           elevation: 0,
           shadowColor: Colors.transparent,
@@ -305,7 +412,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: deepEmerald,
+          foregroundColor: brandDeep,
           shape: roundedMd,
           textStyle: GoogleFonts.prompt(
             fontSize: 13.5,
@@ -321,8 +428,8 @@ class AppTheme {
         backgroundColor: Colors.white,
         // Light selected fill so a chip label stays readable even when the
         // call site does not set its own selected text color.
-        selectedColor: softEmerald,
-        checkmarkColor: deepEmerald,
+        selectedColor: brandSoft,
+        checkmarkColor: brandDeep,
         side: const BorderSide(color: borderSubtle),
         shape: const StadiumBorder(),
         labelStyle: WidgetStateTextStyle.resolveWith(
@@ -333,7 +440,7 @@ class AppTheme {
                 : FontWeight.w500,
             height: 1.2,
             color: states.contains(WidgetState.selected)
-                ? deepEmerald
+                ? brandDeep
                 : slateBody,
           ),
         ),
@@ -344,14 +451,14 @@ class AppTheme {
         elevation: 0,
         backgroundColor: Colors.white.withValues(alpha: 0.86),
         surfaceTintColor: Colors.transparent,
-        indicatorColor: softEmerald,
+        indicatorColor: brandSoft,
         indicatorShape: const StadiumBorder(),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
             size: 23,
             color: states.contains(WidgetState.selected)
-                ? deepEmerald
+                ? brandDeep
                 : slateMuted,
           ),
         ),
@@ -363,7 +470,7 @@ class AppTheme {
                 ? FontWeight.w600
                 : FontWeight.w500,
             color: states.contains(WidgetState.selected)
-                ? deepEmerald
+                ? brandDeep
                 : slateMuted,
           ),
         ),
@@ -433,7 +540,7 @@ class AppTheme {
       tabBarTheme: TabBarThemeData(
         labelColor: slateDark,
         unselectedLabelColor: slateMuted,
-        indicatorColor: brandEmerald,
+        indicatorColor: brandPrimary,
         indicatorSize: TabBarIndicatorSize.label,
         dividerColor: borderSubtle,
         labelStyle: GoogleFonts.prompt(
@@ -452,7 +559,7 @@ class AppTheme {
           (s) => s.contains(WidgetState.selected) ? Colors.white : null,
         ),
         trackColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? brandEmerald : null,
+          (s) => s.contains(WidgetState.selected) ? brandPrimary : null,
         ),
       ),
       listTileTheme: ListTileThemeData(
@@ -475,9 +582,7 @@ class AppTheme {
         radius: const Radius.circular(999),
         thumbColor: WidgetStateProperty.all(slateMuted.withValues(alpha: 0.35)),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: brandEmerald,
-      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: brandPrimary),
       dividerTheme: const DividerThemeData(
         color: borderSubtle,
         thickness: 1,
@@ -486,8 +591,8 @@ class AppTheme {
     );
   }
 
-  static Color parseHexColor(String? hex, {Color fallback = brandEmerald}) {
-    if (hex == null || hex.trim().isEmpty) return fallback;
+  static Color parseHexColor(String? hex, {Color? fallback}) {
+    if (hex == null || hex.trim().isEmpty) return fallback ?? brandPrimary;
     final clean = hex.replaceAll('#', '').trim();
     if (clean.length == 6) {
       final val = int.tryParse('FF$clean', radix: 16);
@@ -496,7 +601,7 @@ class AppTheme {
       final val = int.tryParse(clean, radix: 16);
       if (val != null) return Color(val);
     }
-    return fallback;
+    return fallback ?? brandPrimary;
   }
 
   static IconData resolveMiniAppIcon(String? iconName) {
@@ -590,7 +695,7 @@ class UserAvatar extends StatelessWidget {
 
   List<Color> _gradientColors() {
     if (isOfficial) {
-      return const [Color(0xFF12D46B), Color(0xFF008F39)];
+      return AppTheme.preset.value.gradient;
     }
     if (isGroup) {
       return const [Color(0xFF3B82F6), Color(0xFF1D4ED8)];
@@ -659,7 +764,7 @@ class UserAvatar extends StatelessWidget {
                 width: radius * 0.5,
                 height: radius * 0.5,
                 decoration: BoxDecoration(
-                  color: AppTheme.brandEmerald,
+                  color: AppTheme.brandPrimary,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
@@ -672,7 +777,7 @@ class UserAvatar extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: AppTheme.brandEmerald,
+                  color: AppTheme.brandPrimary,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),

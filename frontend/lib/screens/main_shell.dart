@@ -343,7 +343,7 @@ class _MainShellState extends State<MainShell> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: AppTheme.brandEmerald.withValues(alpha: 0.4),
+                      color: AppTheme.brandPrimary.withValues(alpha: 0.4),
                       width: 2,
                     ),
                   ),
@@ -463,8 +463,8 @@ class _MainShellState extends State<MainShell> {
                 widget.onUserChanged(updated);
                 if (ctx.mounted) Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: AppTheme.deepEmerald,
+                  SnackBar(
+                    backgroundColor: AppTheme.brandDeep,
                     content: Text('บันทึกโปรไฟล์และ BC ID เรียบร้อยแล้ว'),
                   ),
                 );
@@ -517,8 +517,8 @@ class _MainShellState extends State<MainShell> {
                 Navigator.pop(ctx);
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: AppTheme.deepEmerald,
+                  SnackBar(
+                    backgroundColor: AppTheme.brandDeep,
                     content: Text('เพิ่มเพื่อนและสร้างห้องแชทเรียบร้อยแล้ว!'),
                   ),
                 );
@@ -549,12 +549,12 @@ class _MainShellState extends State<MainShell> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              color: AppTheme.softEmerald,
+                              color: AppTheme.brandSoft,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.person_add_alt_1_rounded,
-                              color: AppTheme.deepEmerald,
+                              color: AppTheme.brandDeep,
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -907,55 +907,52 @@ class _MainShellState extends State<MainShell> {
             if (idx == 4) _loadAdminDataQuietly();
           },
           backgroundColor: Colors.white,
-          indicatorColor: AppTheme.softEmerald,
+          indicatorColor: AppTheme.brandSoft,
           destinations: [
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(
-                Icons.home_rounded,
-                color: AppTheme.deepEmerald,
-              ),
+              selectedIcon: Icon(Icons.home_rounded, color: AppTheme.brandDeep),
               label: 'หน้าหลัก',
             ),
             NavigationDestination(
               icon: Badge(
                 isLabelVisible: _totalUnreadCount > 0,
-                backgroundColor: AppTheme.brandEmerald,
+                backgroundColor: AppTheme.brandPrimary,
                 label: Text('$_totalUnreadCount'),
                 child: const Icon(Icons.chat_bubble_outline_rounded),
               ),
               selectedIcon: Badge(
                 isLabelVisible: _totalUnreadCount > 0,
-                backgroundColor: AppTheme.brandEmerald,
+                backgroundColor: AppTheme.brandPrimary,
                 label: Text('$_totalUnreadCount'),
-                child: const Icon(
+                child: Icon(
                   Icons.chat_bubble_rounded,
-                  color: AppTheme.deepEmerald,
+                  color: AppTheme.brandDeep,
                 ),
               ),
               label: 'แชท',
             ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.widgets_outlined),
               selectedIcon: Icon(
                 Icons.widgets_rounded,
-                color: AppTheme.deepEmerald,
+                color: AppTheme.brandDeep,
               ),
               label: 'บริการเสริม',
             ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.bookmark_border_rounded),
               selectedIcon: Icon(
                 Icons.bookmark_rounded,
-                color: AppTheme.deepEmerald,
+                color: AppTheme.brandDeep,
               ),
               label: 'BC Keep',
             ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.admin_panel_settings_outlined),
               selectedIcon: Icon(
                 Icons.admin_panel_settings_rounded,
-                color: AppTheme.deepEmerald,
+                color: AppTheme.brandDeep,
               ),
               label: 'หลังบ้าน',
             ),
@@ -1013,7 +1010,7 @@ class _MainShellState extends State<MainShell> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: AppTheme.brandEmerald.withValues(alpha: 0.2),
+              color: AppTheme.brandPrimary.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(999),
             ),
             child: const Text(
@@ -1060,7 +1057,7 @@ class _MainShellState extends State<MainShell> {
                             AppTheme.radiusMd,
                           ),
                           boxShadow: selected
-                              ? AppTheme.glow(AppTheme.brandEmerald)
+                              ? AppTheme.glow(AppTheme.brandPrimary)
                               : const [],
                         ),
                         child: Column(
@@ -1114,11 +1111,11 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildEmptyChatPlaceholder() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.surfaceBg, AppTheme.softEmerald],
+          colors: [AppTheme.surfaceBg, AppTheme.brandSoft],
         ),
       ),
       alignment: Alignment.center,
@@ -1142,7 +1139,7 @@ class _MainShellState extends State<MainShell> {
               decoration: BoxDecoration(
                 gradient: AppTheme.brandGradient,
                 shape: BoxShape.circle,
-                boxShadow: AppTheme.glow(AppTheme.brandEmerald),
+                boxShadow: AppTheme.glow(AppTheme.brandPrimary),
               ),
               child: const Icon(
                 Icons.chat_bubble_outline_rounded,
@@ -1311,13 +1308,13 @@ class _MainShellState extends State<MainShell> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: PillBadge(
                     text: 'Gmail Cloud Sync',
-                    backgroundColor: AppTheme.softEmerald,
-                    textColor: AppTheme.deepEmerald,
+                    backgroundColor: AppTheme.brandSoft,
+                    textColor: AppTheme.brandDeep,
                     icon: Icons.cloud_done_rounded,
                   ),
                 ),
@@ -1388,7 +1385,7 @@ class _MainShellState extends State<MainShell> {
                                   const SizedBox(width: 6),
                                   PillBadge(
                                     text: _user.department,
-                                    backgroundColor: AppTheme.brandEmerald
+                                    backgroundColor: AppTheme.brandPrimary
                                         .withValues(alpha: 0.25),
                                     textColor: const Color(0xFF4ADE80),
                                   ),
@@ -1431,7 +1428,7 @@ class _MainShellState extends State<MainShell> {
                             child: ElevatedButton.icon(
                               onPressed: _showMyQrDialog,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.brandEmerald,
+                                backgroundColor: AppTheme.brandPrimary,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
                                 ),
@@ -1482,7 +1479,7 @@ class _MainShellState extends State<MainShell> {
                     child: _quickActionTile(
                       icon: Icons.person_add_alt_1_rounded,
                       label: 'เพิ่มเพื่อน',
-                      color: AppTheme.deepEmerald,
+                      color: AppTheme.brandDeep,
                       onTap: () => _showAddFriendDialog(isWide: isWide),
                     ),
                   ),
@@ -1641,10 +1638,10 @@ class _MainShellState extends State<MainShell> {
                         text: g.folderLabel,
                         backgroundColor: g.isWork
                             ? const Color(0xFFDBEAFE)
-                            : AppTheme.softEmerald,
+                            : AppTheme.brandSoft,
                         textColor: g.isWork
                             ? AppTheme.workBlue
-                            : AppTheme.deepEmerald,
+                            : AppTheme.brandDeep,
                       ),
                     ],
                   ),
@@ -1702,10 +1699,10 @@ class _MainShellState extends State<MainShell> {
                     style: const TextStyle(fontSize: 12),
                   ),
                   trailing: IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.chat_bubble_outline_rounded,
                       size: 18,
-                      color: AppTheme.deepEmerald,
+                      color: AppTheme.brandDeep,
                     ),
                     onPressed: () => _openChatWithFriend(f, isWide: isWide),
                   ),
@@ -1759,7 +1756,7 @@ class _MainShellState extends State<MainShell> {
               if (_totalUnreadCount > 0)
                 PillBadge(
                   text: 'ยังไม่อ่าน $_totalUnreadCount',
-                  backgroundColor: AppTheme.brandEmerald,
+                  backgroundColor: AppTheme.brandPrimary,
                   textColor: Colors.white,
                 ),
               const Spacer(),
@@ -1871,9 +1868,9 @@ class _MainShellState extends State<MainShell> {
                       final m = _globalSearchResults[i];
                       return ListTile(
                         dense: true,
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.manage_search_rounded,
-                          color: AppTheme.deepEmerald,
+                          color: AppTheme.brandDeep,
                         ),
                         title: Text(
                           m.previewText,
@@ -1926,7 +1923,7 @@ class _MainShellState extends State<MainShell> {
 
                     final hasUnread = conv.unreadCount > 0;
                     return Material(
-                      color: isSelected ? AppTheme.softEmerald : Colors.white,
+                      color: isSelected ? AppTheme.brandSoft : Colors.white,
                       child: InkWell(
                         onTap: () => _selectConversation(conv, isWide: isWide),
                         hoverColor: AppTheme.surfaceBg,
@@ -1991,10 +1988,10 @@ class _MainShellState extends State<MainShell> {
                                                 text: conv.folderLabel,
                                                 backgroundColor: conv.isWork
                                                     ? const Color(0xFFDBEAFE)
-                                                    : AppTheme.softEmerald,
+                                                    : AppTheme.brandSoft,
                                                 textColor: conv.isWork
                                                     ? AppTheme.workBlue
-                                                    : AppTheme.deepEmerald,
+                                                    : AppTheme.brandDeep,
                                               ),
                                               const SizedBox(width: 8),
                                               Text(
@@ -2004,7 +2001,7 @@ class _MainShellState extends State<MainShell> {
                                                   fontSize: 11,
                                                   height: 1.35,
                                                   color: hasUnread
-                                                      ? AppTheme.deepEmerald
+                                                      ? AppTheme.brandDeep
                                                       : AppTheme.slateMuted,
                                                   fontWeight: hasUnread
                                                       ? FontWeight.w700
@@ -2058,7 +2055,7 @@ class _MainShellState extends State<MainShell> {
                                                   alignment: Alignment.center,
                                                   decoration: BoxDecoration(
                                                     color:
-                                                        AppTheme.brandEmerald,
+                                                        AppTheme.brandPrimary,
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                           999,
@@ -2092,8 +2089,8 @@ class _MainShellState extends State<MainShell> {
                                 bottom: 10,
                                 child: Container(
                                   width: 4,
-                                  decoration: const BoxDecoration(
-                                    color: AppTheme.brandEmerald,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.brandPrimary,
                                     borderRadius: BorderRadius.horizontal(
                                       right: Radius.circular(4),
                                     ),
@@ -2179,7 +2176,7 @@ class _MainShellState extends State<MainShell> {
                           borderRadius: BorderRadius.circular(
                             AppTheme.radiusMd,
                           ),
-                          boxShadow: AppTheme.glow(AppTheme.brandEmerald),
+                          boxShadow: AppTheme.glow(AppTheme.brandPrimary),
                         ),
                         child: const Icon(
                           Icons.widgets_rounded,
@@ -2383,29 +2380,26 @@ class _MainShellState extends State<MainShell> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.softEmerald,
+                    color: AppTheme.brandSoft,
                     borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                     border: Border.all(
-                      color: AppTheme.brandEmerald.withValues(alpha: 0.35),
+                      color: AppTheme.brandPrimary.withValues(alpha: 0.35),
                     ),
                     boxShadow: AppTheme.shadowSm,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.cloud_done_rounded,
-                        color: AppTheme.deepEmerald,
-                      ),
+                      Icon(Icons.cloud_done_rounded, color: AppTheme.brandDeep),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'BC Keep ซิงค์อัตโนมัติตามบัญชี Gmail (${_user.email}) เก็บข้อความ ลิงก์ และไฟล์สำคัญถาวร ไม่มีวันหมดอายุ',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             height: 1.45,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.deepEmerald,
+                            color: AppTheme.brandDeep,
                           ),
                         ),
                       ),
@@ -2456,8 +2450,8 @@ class _MainShellState extends State<MainShell> {
                                     alignment: Alignment.centerLeft,
                                     child: PillBadge(
                                       text: note.category,
-                                      backgroundColor: AppTheme.softEmerald,
-                                      textColor: AppTheme.deepEmerald,
+                                      backgroundColor: AppTheme.brandSoft,
+                                      textColor: AppTheme.brandDeep,
                                       icon: Icons.bookmark_rounded,
                                     ),
                                   ),
@@ -2624,7 +2618,7 @@ class _MainShellState extends State<MainShell> {
                           'ผู้ใช้งานทั้งหมด (Gmail)',
                           '${ov?.totalUsers ?? _adminUsers.length} บัญชี',
                           Icons.people_alt_rounded,
-                          AppTheme.brandEmerald,
+                          AppTheme.brandPrimary,
                           width: tileWidth,
                           compact: compact,
                         ),
@@ -2658,6 +2652,10 @@ class _MainShellState extends State<MainShell> {
                 ),
                 const SizedBox(height: 24),
 
+                // Business theme (applies to everyone in the organisation)
+                _buildBusinessThemeCard(),
+                const SizedBox(height: 24),
+
                 // Section 0: DeepSeek AI Brain Configuration
                 _buildAiBrainSettingsCard(),
                 const SizedBox(height: 24),
@@ -2684,13 +2682,13 @@ class _MainShellState extends State<MainShell> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         alignment: WrapAlignment.spaceBetween,
                         children: [
-                          const Row(
+                          Row(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Icon(
                                 Icons.dashboard_customize_rounded,
-                                color: AppTheme.brandEmerald,
+                                color: AppTheme.brandPrimary,
                               ),
                               SizedBox(width: 8),
                               Flexible(
@@ -2758,10 +2756,10 @@ class _MainShellState extends State<MainShell> {
                                       ? 'เปิดใช้งาน'
                                       : 'ปิดชั่วคราว',
                                   backgroundColor: app.enabled
-                                      ? AppTheme.softEmerald
+                                      ? AppTheme.brandSoft
                                       : const Color(0xFFFEE2E2),
                                   textColor: app.enabled
-                                      ? AppTheme.deepEmerald
+                                      ? AppTheme.brandDeep
                                       : AppTheme.dangerRed,
                                 ),
                               ],
@@ -2777,7 +2775,7 @@ class _MainShellState extends State<MainShell> {
                               children: [
                                 Switch(
                                   value: app.enabled,
-                                  activeThumbColor: AppTheme.brandEmerald,
+                                  activeThumbColor: AppTheme.brandPrimary,
                                   onChanged: (val) async {
                                     await ApiService.instance
                                         .updateAdminMiniApp(app.id, {
@@ -3011,8 +3009,8 @@ class _MainShellState extends State<MainShell> {
               await _loadAdminDataQuietly();
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  backgroundColor: AppTheme.deepEmerald,
+                SnackBar(
+                  backgroundColor: AppTheme.brandDeep,
                   content: Text(
                     'อัปเดตบริการเสริมเรียบร้อย! ผู้ใช้ทุกคนเห็นทันทีโดยไม่ต้องอัปเดตแอป',
                   ),
@@ -3024,6 +3022,102 @@ class _MainShellState extends State<MainShell> {
         ],
       ),
     );
+  }
+
+  Widget _buildBusinessThemeCard() {
+    final current = AppTheme.preset.value;
+    final tileWidth = MediaQuery.sizeOf(context).width < 600
+        ? double.infinity
+        : 236.0;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(color: AppTheme.borderSubtle),
+        boxShadow: AppTheme.shadowMd,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.brandGradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.palette_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ธีมสีของกิจการ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.slateDark,
+                        height: 1.3,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'เลือกสีให้เข้ากับธุรกิจ เปลี่ยนแล้วทุกคนในองค์กรเห็นทันที',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: AppTheme.slateMuted,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final p in ThemePreset.all)
+                SizedBox(
+                  width: tileWidth,
+                  child: _ThemePresetTile(
+                    preset: p,
+                    selected: p.code == current.code,
+                    onTap: () => _changeBusinessTheme(p),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _changeBusinessTheme(ThemePreset preset) async {
+    if (preset.code == AppTheme.preset.value.code) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ApiService.instance.updateBusinessTheme(preset.code);
+      messenger.showSnackBar(
+        SnackBar(content: Text('เปลี่ยนธีมเป็น "${preset.name}" แล้ว')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    }
   }
 
   Widget _buildAiBrainSettingsCard() {
@@ -3086,8 +3180,8 @@ class _MainShellState extends State<MainShell> {
                             PillBadge(
                               text:
                                   'API Key: ${_aiSettings.maskedKey.isNotEmpty ? _aiSettings.maskedKey : "พร้อมใช้งาน"}',
-                              backgroundColor: AppTheme.softEmerald,
-                              textColor: AppTheme.deepEmerald,
+                              backgroundColor: AppTheme.brandSoft,
+                              textColor: AppTheme.brandDeep,
                               icon: Icons.verified_rounded,
                             ),
                           ],
@@ -3171,8 +3265,8 @@ class _MainShellState extends State<MainShell> {
                       setState(() => _aiSettings = updated);
                       apiKeyCtrl.clear();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          backgroundColor: AppTheme.deepEmerald,
+                        SnackBar(
+                          backgroundColor: AppTheme.brandDeep,
                           content: Text(
                             'บันทึกการตั้งค่าสมองกล DeepSeek AI ประจำองค์กรเรียบร้อยแล้ว!',
                           ),
@@ -3355,7 +3449,7 @@ class _MainShellState extends State<MainShell> {
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  backgroundColor: AppTheme.deepEmerald,
+                                  backgroundColor: AppTheme.brandDeep,
                                   content: Text(
                                     'โอนย้ายห้องแชทสำเร็จ ($count ห้อง) พร้อมส่ง AI Briefing เรียบร้อยแล้ว!',
                                   ),
@@ -3395,15 +3489,15 @@ class _MainShellState extends State<MainShell> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.softEmerald,
+                      color: AppTheme.brandSoft,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       handoverResultNote!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.deepEmerald,
+                        color: AppTheme.brandDeep,
                       ),
                     ),
                   ),
@@ -3476,8 +3570,8 @@ class _MainShellState extends State<MainShell> {
                 await _refreshConversationsAndFriends();
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: AppTheme.deepEmerald,
+                  SnackBar(
+                    backgroundColor: AppTheme.brandDeep,
                     content: Text(
                       'ส่งประกาศ Broadcast เข้าห้อง BC Official OA เรียบร้อยแล้ว!',
                     ),
@@ -3565,16 +3659,101 @@ class _MainShellState extends State<MainShell> {
                 trailing: PillBadge(
                   text: u.role.toUpperCase(),
                   backgroundColor: u.isAdmin
-                      ? AppTheme.softEmerald
+                      ? AppTheme.brandSoft
                       : AppTheme.surfaceBg,
                   textColor: u.isAdmin
-                      ? AppTheme.deepEmerald
+                      ? AppTheme.brandDeep
                       : AppTheme.slateBody,
                 ),
               );
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ThemePresetTile extends StatelessWidget {
+  final ThemePreset preset;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemePresetTile({
+    required this.preset,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(14);
+    return Material(
+      color: selected ? preset.soft : Colors.white,
+      borderRadius: radius,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(
+              color: selected ? preset.primary : AppTheme.borderSubtle,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: preset.gradient),
+                  shape: BoxShape.circle,
+                ),
+                child: selected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      preset.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.slateDark,
+                        height: 1.3,
+                      ),
+                    ),
+                    Text(
+                      preset.suitsFor,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.slateMuted,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

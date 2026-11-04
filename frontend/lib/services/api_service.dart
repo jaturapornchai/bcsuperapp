@@ -41,9 +41,7 @@ class ApiService {
   Future<bool> restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString(_prefTokenKey);
-    _chatTheme = ChatRoomThemeMode.fromCode(
-      prefs.getString(_prefChatThemeKey),
-    );
+    _chatTheme = ChatRoomThemeMode.fromCode(prefs.getString(_prefChatThemeKey));
     final rawUser = prefs.getString(_prefUserKey);
     if (rawUser != null && rawUser.isNotEmpty) {
       try {
@@ -77,9 +75,14 @@ class ApiService {
     await prefs.setString(_prefChatThemeKey, mode.code);
   }
 
+  /// Test windows share one prefs file, so they must not overwrite the
+  /// real saved session.
+  bool persistSession = true;
+
   Future<void> _saveAuth(String token, AppUser user) async {
     _token = token;
     _currentUser = user;
+    if (!persistSession) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefTokenKey, token);
     await prefs.setString(_prefUserKey, jsonEncode(user.toJson()));
@@ -108,6 +111,9 @@ class ApiService {
             try {
               final decoded = jsonDecode(raw);
               if (decoded is Map<String, dynamic>) {
+                if (decoded['event'] == 'theme_changed') {
+                  AppTheme.applyPreset(decoded['preset']?.toString());
+                }
                 _wsController.add(decoded);
               } else if (decoded is Map) {
                 _wsController.add(Map<String, dynamic>.from(decoded));
@@ -457,8 +463,7 @@ class ApiService {
         'sticker_code': ?stickerCode,
         'attachment': ?attachmentJson,
         'flex_payload': ?effectiveFlex,
-        if (replyToId != null && replyToId.isNotEmpty)
-          'reply_to_id': replyToId,
+        if (replyToId != null && replyToId.isNotEmpty) 'reply_to_id': replyToId,
       }),
     );
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -516,10 +521,7 @@ class ApiService {
     final res = await http.post(
       Uri.parse('$baseUrl/api/admin/handover'),
       headers: _headers,
-      body: jsonEncode({
-        'from_user_id': fromUserId,
-        'to_user_id': toUserId,
-      }),
+      body: jsonEncode({'from_user_id': fromUserId, 'to_user_id': toUserId}),
     );
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception(
@@ -864,6 +866,37 @@ class ApiService {
       mode: mode,
       model: 'deepseek-chat',
     );
+  }
+
+  /// Public endpoint, so the login screen is themed before sign-in.
+  Future<void> loadBusinessTheme() async {
+    try {
+      final res = await http
+          .get(Uri.parse('$baseUrl/api/settings/theme'))
+          .timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+        AppTheme.applyPreset(decoded['preset']?.toString());
+      }
+    } catch (_) {
+      // Offline: keep the current colours.
+    }
+  }
+
+  Future<void> updateBusinessTheme(String code) async {
+    final res = await http.put(
+      Uri.parse('$baseUrl/api/settings/theme'),
+      headers: _headers,
+      body: jsonEncode({'preset': code}),
+    );
+    if (res.statusCode != 200) {
+      throw Exception(
+        res.statusCode == 403
+            ? 'เฉพาะผู้ดูแลระบบเท่านั้นที่เปลี่ยนธีมได้'
+            : 'บันทึกธีมไม่สำเร็จ',
+      );
+    }
+    AppTheme.applyPreset(code);
   }
 
   Future<AiAdminSettings> fetchAdminAiSettings() async {

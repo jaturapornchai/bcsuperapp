@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use bson::doc;
+use bson::{doc, Document};
 use chrono::Utc;
 use futures_util::TryStreamExt;
 use serde::Deserialize;
@@ -464,4 +464,68 @@ pub async fn admin_handover_handler(
         "transferred_conversations": count,
         "status": "ok",
     })))
+}
+
+/// Business theme presets; the codes must match `ThemePreset.code` in the Flutter app.
+const THEME_PRESETS: [&str; 7] = [
+    "emerald",
+    "finance_blue",
+    "restaurant_orange",
+    "clinic_teal",
+    "retail_red",
+    "factory_amber",
+    "beauty_pink",
+];
+const DEFAULT_THEME: &str = "emerald";
+
+/// Public: the login screen needs the theme before anyone signs in.
+pub async fn get_theme_handler(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
+    let preset = state
+        .db
+        .collection::<Document>("app_settings")
+        .find_one(doc! { "_id": "theme" })
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .and_then(|d| d.get_str("preset").ok().map(str::to_string))
+        .filter(|p| THEME_PRESETS.contains(&p.as_str()))
+        .unwrap_or_else(|| DEFAULT_THEME.to_string());
+    Ok(Json(json!({ "preset": preset })))
+}
+
+#[derive(Deserialize)]
+pub struct UpdateThemeRequest {
+    pub preset: String,
+}
+
+pub async fn update_theme_handler(
+    auth: AuthUser,
+    State(state): State<AppState>,
+    Json(payload): Json<UpdateThemeRequest>,
+) -> Result<Json<Value>, ApiError> {
+    if auth.role != "admin" {
+        return Err(ApiError::forbidden("เฉพาะผู้ดูแลระบบเท่านั้นที่เปลี่ยนธีมได้"));
+    }
+    let preset = payload.preset.trim();
+    if !THEME_PRESETS.contains(&preset) {
+        return Err(ApiError::bad_request("ไม่พบธีมที่เลือก"));
+    }
+    state
+        .db
+        .collection::<Document>("app_settings")
+        .update_one(
+            doc! { "_id": "theme" },
+            doc! { "$set": {
+                "preset": preset,
+                "updated_by": &auth.user_id,
+                "updated_at": Utc::now().to_rfc3339(),
+            } },
+        )
+        .upsert(true)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    // Every open client repaints right away.
+    state
+        .ws_hub
+        .broadcast_event(json!({ "event": "theme_changed", "preset": preset }));
+    Ok(Json(json!({ "preset": preset })))
 }

@@ -1,3 +1,6 @@
+import 'dart:io' show Platform, Process, ProcessStartMode;
+
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../models/models.dart';
@@ -8,6 +11,16 @@ class LoginScreen extends StatefulWidget {
   final ValueChanged<AppUser> onLoggedIn;
 
   const LoginScreen({super.key, required this.onLoggedIn});
+
+  /// Seeded by backend/src/seed.rs (TEST_ACCOUNTS); all five share the
+  /// group room "ห้องทดสอบแชท 5 คน" with BC AI.
+  static const List<({String email, String name})> testAccounts = [
+    (email: 'tester1@bcapp.local', name: 'ก้อง (ทดสอบ 1)'),
+    (email: 'tester2@bcapp.local', name: 'แพร (ทดสอบ 2)'),
+    (email: 'tester3@bcapp.local', name: 'บอส (ทดสอบ 3)'),
+    (email: 'tester4@bcapp.local', name: 'มายด์ (ทดสอบ 4)'),
+    (email: 'tester5@bcapp.local', name: 'ต้น (ทดสอบ 5)'),
+  ];
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -111,12 +124,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: AppTheme.softEmerald,
+                          color: AppTheme.brandSoft,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.g_mobiledata_rounded,
-                          color: AppTheme.deepEmerald,
+                          color: AppTheme.brandDeep,
                           size: 30,
                         ),
                       ),
@@ -258,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           : const Alignment(0, -0.8),
                       radius: 0.9,
                       colors: [
-                        AppTheme.brandEmerald.withValues(alpha: 0.16),
+                        AppTheme.brandPrimary.withValues(alpha: 0.16),
                         Colors.transparent,
                       ],
                     ),
@@ -320,7 +333,7 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         gradient: AppTheme.brandGradient,
         borderRadius: BorderRadius.circular(size * 0.3),
-        boxShadow: AppTheme.glow(AppTheme.brandEmerald),
+        boxShadow: AppTheme.glow(AppTheme.brandPrimary),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -425,10 +438,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 24,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         decoration: BoxDecoration(
-                          color: AppTheme.brandEmerald.withValues(alpha: 0.2),
+                          color: AppTheme.brandPrimary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: AppTheme.brandEmerald.withValues(alpha: 0.5),
+                            color: AppTheme.brandPrimary.withValues(alpha: 0.5),
                           ),
                         ),
                         // widthFactor keeps the pill hugging its label
@@ -480,7 +493,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppTheme.brandEmerald.withValues(alpha: 0.16),
+                      color: AppTheme.brandPrimary.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     ),
                     child: Icon(
@@ -543,12 +556,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppTheme.softEmerald,
+                  color: AppTheme.brandSoft,
                   borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.verified_user_rounded,
-                  color: AppTheme.brandEmerald,
+                  color: AppTheme.brandPrimary,
                   size: 22,
                 ),
               ),
@@ -731,10 +744,10 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
 
           const SizedBox(height: 22),
-          const Row(
+          Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(Icons.bolt_rounded, size: 18, color: AppTheme.brandEmerald),
+              Icon(Icons.bolt_rounded, size: 18, color: AppTheme.brandPrimary),
               SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -769,8 +782,90 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
             );
           }),
+          const SizedBox(height: 22),
+          _buildTestChatSection(),
         ],
       ),
+    );
+  }
+
+  // Only the desktop exe can relaunch itself as extra windows.
+  bool get _canOpenTestWindows =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+
+  Future<void> _openTestChatWindows() async {
+    try {
+      for (var i = 0; i < LoginScreen.testAccounts.length; i++) {
+        await Process.start(Platform.resolvedExecutable, [
+          '--test-login=${LoginScreen.testAccounts[i].email}',
+          '--test-slot=$i',
+        ], mode: ProcessStartMode.detached);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'เปิดหน้าต่างทดสอบไม่สำเร็จ: $e');
+    }
+  }
+
+  Widget _buildTestChatSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(Icons.groups_rounded, size: 18, color: AppTheme.brandPrimary),
+            const SizedBox(width: 6),
+            const Expanded(
+              child: Text(
+                'ทดสอบแชท 5 คน (บัญชีทดสอบ)',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.slateDark,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'ทั้ง 5 คนอยู่ใน "ห้องทดสอบแชท 5 คน" พร้อม BC AI ลองส่งข้อความ รูป ไฟล์ และพิมพ์ @ai ได้เลย',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppTheme.slateMuted,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (_canOpenTestWindows) ...[
+          FilledButton.icon(
+            onPressed: _isLoading ? null : _openTestChatWindows,
+            icon: const Icon(Icons.open_in_new_rounded, size: 18),
+            label: const Text('เปิด 5 หน้าต่าง คุยกันได้ทันที'),
+          ),
+          const SizedBox(height: 10),
+        ],
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final acc in LoginScreen.testAccounts)
+              ActionChip(
+                avatar: const Icon(Icons.person_rounded, size: 16),
+                label: Text(acc.name),
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        _emailController.text = acc.email;
+                        _nameController.text = acc.name;
+                        _performLogin(email: acc.email, displayName: acc.name);
+                      },
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -812,11 +907,11 @@ class _DemoAccountTileState extends State<_DemoAccountTile> {
           duration: AppTheme.motionFast,
           curve: AppTheme.motionCurve,
           decoration: BoxDecoration(
-            color: _hover ? AppTheme.softEmerald : AppTheme.surfaceBg,
+            color: _hover ? AppTheme.brandSoft : AppTheme.surfaceBg,
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             border: Border.all(
               color: _hover
-                  ? AppTheme.brandEmerald.withValues(alpha: 0.5)
+                  ? AppTheme.brandPrimary.withValues(alpha: 0.5)
                   : AppTheme.borderSubtle,
             ),
             boxShadow: _hover ? AppTheme.shadowSm : const [],
@@ -861,10 +956,10 @@ class _DemoAccountTileState extends State<_DemoAccountTile> {
                               PillBadge(
                                 text: widget.role,
                                 backgroundColor: isAdmin
-                                    ? AppTheme.softEmerald
+                                    ? AppTheme.brandSoft
                                     : const Color(0xFFE0E7FF),
                                 textColor: isAdmin
-                                    ? AppTheme.deepEmerald
+                                    ? AppTheme.brandDeep
                                     : AppTheme.workBlue,
                               ),
                             ],

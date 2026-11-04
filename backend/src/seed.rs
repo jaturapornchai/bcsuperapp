@@ -584,6 +584,88 @@ pub async fn seed_initial_data(state: &AppState) -> Result<(), String> {
         ensure_user_onboarding(state, &jead_user).await?;
     }
 
+    // 6. Five test accounts sharing one group room, so a chat can be tried end to end
+    ensure_test_chat_room(state).await?;
+
+    Ok(())
+}
+
+pub const TEST_CHAT_ROOM_ID: &str = "conv_group_test5";
+
+/// Test accounts the login screen offers for trying a 5-person chat.
+pub const TEST_ACCOUNTS: [(&str, &str, &str); 5] = [
+    ("user_tester1", "tester1@bcapp.local", "ก้อง (ทดสอบ 1)"),
+    ("user_tester2", "tester2@bcapp.local", "แพร (ทดสอบ 2)"),
+    ("user_tester3", "tester3@bcapp.local", "บอส (ทดสอบ 3)"),
+    ("user_tester4", "tester4@bcapp.local", "มายด์ (ทดสอบ 4)"),
+    ("user_tester5", "tester5@bcapp.local", "ต้น (ทดสอบ 5)"),
+];
+
+async fn ensure_test_chat_room(state: &AppState) -> Result<(), String> {
+    let users_coll = state.db.collection::<UserDoc>("users");
+    let now = Utc::now().to_rfc3339();
+
+    for (i, (id, email, name)) in TEST_ACCOUNTS.iter().enumerate() {
+        let exists = users_coll
+            .find_one(doc! { "_id": *id })
+            .await
+            .map_err(|e| e.to_string())?
+            .is_some();
+        if !exists {
+            let user = UserDoc {
+                id: id.to_string(),
+                email: email.to_string(),
+                display_name: name.to_string(),
+                bc_id: format!("tester{}.bc", i + 1),
+                avatar_url: String::new(),
+                status_message: "บัญชีทดสอบแชท".to_string(),
+                qr_token: format!("BCQR_TESTER{}", i + 1),
+                role: "user".to_string(),
+                department: "ทีมทดสอบ".to_string(),
+                job_title: "ผู้ทดสอบระบบ".to_string(),
+                google_id: None,
+                created_at: now.clone(),
+            };
+            users_coll.insert_one(&user).await.map_err(|e| e.to_string())?;
+        }
+    }
+
+    // Everyone is friends with everyone, so 1-1 chats can be opened too.
+    for (a, ..) in TEST_ACCOUNTS.iter() {
+        for (b, ..) in TEST_ACCOUNTS.iter() {
+            if a < b {
+                ensure_friendship_pair(state, a, b, false).await?;
+            }
+        }
+    }
+
+    let conv_coll = state.db.collection::<ConversationDoc>("conversations");
+    let exists = conv_coll
+        .find_one(doc! { "_id": TEST_CHAT_ROOM_ID })
+        .await
+        .map_err(|e| e.to_string())?
+        .is_some();
+    if exists {
+        return Ok(());
+    }
+
+    let mut member_ids: Vec<String> = TEST_ACCOUNTS.iter().map(|(id, ..)| id.to_string()).collect();
+    member_ids.push("user_ai".to_string());
+    let room = ConversationDoc {
+        id: TEST_CHAT_ROOM_ID.to_string(),
+        conv_type: "group".to_string(),
+        name: "ห้องทดสอบแชท 5 คน".to_string(),
+        avatar_url: String::new(),
+        folder: "work".to_string(),
+        is_pinned: true,
+        member_ids,
+        user_meta: HashMap::new(),
+        pinned_message: None,
+        last_message: None,
+        created_at: now.clone(),
+        updated_at: now,
+    };
+    conv_coll.insert_one(room).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 

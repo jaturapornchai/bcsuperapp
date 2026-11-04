@@ -492,4 +492,69 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
         }
     }
     assert_eq!(noop_read_events, 0, "no-op read must not be broadcast");
+
+    // 12. Five seeded test accounts share one group room.
+    let (status, tester) = call(&app, "POST", "/api/auth/google", None,
+        Some(json!({ "email": "tester1@bcapp.local", "display_name": "ก้อง (ทดสอบ 1)" }))).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(tester["user"]["role"], "user");
+    let tester_token = tester["token"].as_str().unwrap().to_string();
+    let (_, convs) = call(&app, "GET", "/api/conversations?folder=all", Some(&tester_token), None).await;
+    let room = convs.as_array().unwrap()
+        .iter().find(|c| c["id"] == "conv_group_test5").cloned()
+        .expect("tester sees the 5-person test room");
+    assert!(room.to_string().contains("ห้องทดสอบแชท 5 คน"));
+
+    // 13. Business theme: anyone reads it, only an admin changes it, clients get a push.
+    let (status, before) = call(&app, "GET", "/api/settings/theme", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+    let original = before["preset"].as_str().unwrap().to_string();
+    let target = if original == "clinic_teal" { "retail_red" } else { "clinic_teal" };
+    let (status, _) = call(&app, "PUT", "/api/settings/theme", Some(&tester_token),
+        Some(json!({ "preset": target }))).await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "non-admin must not change the theme");
+    let (status, _) = call(&app, "PUT", "/api/settings/theme", Some(&token),
+        Some(json!({ "preset": "not_a_theme" }))).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    while ws_rx.try_recv().is_ok() {}
+    let (status, _) = call(&app, "PUT", "/api/settings/theme", Some(&token),
+        Some(json!({ "preset": target }))).await;
+    assert_eq!(status, StatusCode::OK);
+    let (_, after) = call(&app, "GET", "/api/settings/theme", None, None).await;
+    assert_eq!(after["preset"], target);
+    let mut pushed = false;
+    while let Ok(text) = ws_rx.try_recv() {
+        let event: Value = serde_json::from_str(&text).unwrap();
+        pushed |= event["event"] == "theme_changed" && event["preset"] == target;
+    }
+    assert!(pushed, "theme change must be broadcast");
+    // Leave the shared database the way we found it.
+    let (status, _) = call(&app, "PUT", "/api/settings/theme", Some(&token),
+        Some(json!({ "preset": original }))).await;
+    assert_eq!(status, StatusCode::OK);
+
+}
+
+async fn call(
+    app: &axum::Router,
+    method: &str,
+    uri: &str,
+    token: Option<&str>,
+    body: Option<Value>,
+) -> (StatusCode, Value) {
+    let mut req = Request::builder().method(method).uri(uri);
+    if let Some(t) = token {
+        req = req.header("authorization", format!("Bearer {}", t));
+    }
+    let req = match body {
+        Some(b) => req
+            .header("content-type", "application/json")
+            .body(Body::from(b.to_string())),
+        None => req.body(Body::empty()),
+    }
+    .unwrap();
+    let res = app.clone().oneshot(req).await.unwrap();
+    let status = res.status();
+    let bytes = axum::body::to_bytes(res.into_body(), 1024 * 1024).await.unwrap();
+    (status, serde_json::from_slice(&bytes).unwrap_or(Value::Null))
 }

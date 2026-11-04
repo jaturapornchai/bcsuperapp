@@ -21,7 +21,7 @@ use crate::{
         admin_routes::{
             admin_broadcast_handler, admin_create_mini_app_handler,
             admin_delete_mini_app_handler, admin_handover_handler, admin_list_mini_apps_handler,
-            admin_list_users_handler, admin_overview_handler, admin_update_mini_app_handler,
+            admin_list_users_handler, admin_overview_handler, get_theme_handler, update_theme_handler, admin_update_mini_app_handler,
             admin_update_user_role_handler,
         },
         ai_routes::{
@@ -155,6 +155,10 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/api/admin/ai-settings",
             get(get_ai_settings_handler).put(update_ai_settings_handler),
+        )
+        .route(
+            "/api/settings/theme",
+            get(get_theme_handler).put(update_theme_handler),
         )
         // Admin Backoffice
         .route("/api/admin/overview", get(admin_overview_handler))

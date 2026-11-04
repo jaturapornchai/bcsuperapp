@@ -181,7 +181,7 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
       widget.onCardSent?.call(msg);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: AppTheme.deepEmerald,
+          backgroundColor: AppTheme.brandDeep,
           content: Text(
             'ส่งการ์ด "${widget.miniApp.title}" เข้าห้องแชทเรียบร้อยแล้ว',
           ),
@@ -293,37 +293,37 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.softEmerald,
+                    color: AppTheme.brandSoft,
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     border: Border.all(
-                      color: AppTheme.brandEmerald.withValues(alpha: 0.35),
+                      color: AppTheme.brandPrimary.withValues(alpha: 0.35),
                     ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.verified_user_rounded,
-                        color: AppTheme.deepEmerald,
+                        color: AppTheme.brandDeep,
                         size: 20,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'เชื่อมต่อ SSO ด้วยบัญชี Gmail: ${user?.email ?? "-"} (${user?.displayName ?? "-"}) เรียบร้อยแล้ว',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.deepEmerald,
+                            color: AppTheme.brandDeep,
                             height: 1.4,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const PillBadge(
+                      PillBadge(
                         text: 'JS Bridge Active',
                         backgroundColor: Colors.white,
-                        textColor: AppTheme.deepEmerald,
+                        textColor: AppTheme.brandDeep,
                         icon: Icons.check_circle_rounded,
                       ),
                     ],
@@ -382,8 +382,8 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
   Widget _folderBadge(Conversation conv) {
     return PillBadge(
       text: conv.folderLabel,
-      backgroundColor: AppTheme.softEmerald,
-      textColor: AppTheme.deepEmerald,
+      backgroundColor: AppTheme.brandSoft,
+      textColor: AppTheme.brandDeep,
     );
   }
 
@@ -451,7 +451,7 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                       final selected = conv.id == _selectedConversationId;
                       return Material(
                         color: selected
-                            ? AppTheme.softEmerald
+                            ? AppTheme.brandSoft
                             : AppTheme.surfaceBg,
                         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                         child: InkWell(
@@ -486,10 +486,10 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                                 _folderBadge(conv),
                                 if (selected) ...[
                                   const SizedBox(width: 8),
-                                  const Icon(
+                                  Icon(
                                     Icons.check_circle_rounded,
                                     size: 18,
-                                    color: AppTheme.brandEmerald,
+                                    color: AppTheme.brandPrimary,
                                   ),
                                 ],
                               ],

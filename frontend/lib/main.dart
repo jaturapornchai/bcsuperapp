@@ -6,15 +6,23 @@ import 'screens/main_shell.dart';
 import 'services/api_service.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+void main(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const BCApp());
+  // Set by the 5-person chat test launcher (login_screen.dart).
+  const prefix = '--test-login=';
+  final testLogin = args
+      .where((a) => a.startsWith(prefix))
+      .map((a) => a.substring(prefix.length))
+      .firstOrNull;
+  runApp(BCApp(testLoginEmail: testLogin));
 }
 
 typedef MyApp = BCApp;
 
 class BCApp extends StatefulWidget {
-  const BCApp({super.key});
+  final String? testLoginEmail;
+
+  const BCApp({super.key, this.testLoginEmail});
 
   @override
   State<BCApp> createState() => _BCAppState();
@@ -27,10 +35,35 @@ class _BCAppState extends State<BCApp> {
   @override
   void initState() {
     super.initState();
+    AppTheme.preset.addListener(_repaintAll);
+    ApiService.instance.loadBusinessTheme();
     _initSession();
   }
 
+  @override
+  void dispose() {
+    AppTheme.preset.removeListener(_repaintAll);
+    super.dispose();
+  }
+
+  // Many widgets read brand colours straight from AppTheme, so a theme
+  // switch rebuilds the whole tree (state is kept), not just Theme users.
+  void _repaintAll() {
+    setState(() {});
+    void rebuild(Element el) {
+      el.markNeedsBuild();
+      el.visitChildren(rebuild);
+    }
+
+    (context as Element).visitChildren(rebuild);
+  }
+
   Future<void> _initSession() async {
+    final testEmail = widget.testLoginEmail;
+    if (testEmail != null) {
+      await _loginTestAccount(testEmail);
+      return;
+    }
     try {
       final ok = await ApiService.instance.restoreSession();
       if (!mounted) return;
@@ -42,6 +75,27 @@ class _BCAppState extends State<BCApp> {
       if (!mounted) return;
       setState(() => _checkingSession = false);
     }
+  }
+
+  Future<void> _loginTestAccount(String email) async {
+    ApiService.instance.persistSession = false;
+    final account = LoginScreen.testAccounts
+        .where((a) => a.email == email)
+        .firstOrNull;
+    AppUser? user;
+    try {
+      user = await ApiService.instance.loginWithGoogle(
+        email: email,
+        displayName: account?.name ?? email.split('@').first,
+      );
+    } catch (_) {
+      // Backend down: fall back to the login screen.
+    }
+    if (!mounted) return;
+    setState(() {
+      _currentUser = user;
+      _checkingSession = false;
+    });
   }
 
   void _handleLoggedIn(AppUser user) {
@@ -103,7 +157,7 @@ class _SplashLoadingView extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: AppTheme.brandGradient,
                     borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    boxShadow: AppTheme.glow(AppTheme.brandEmerald),
+                    boxShadow: AppTheme.glow(AppTheme.brandPrimary),
                   ),
                   alignment: Alignment.center,
                   child: const Text(
@@ -117,12 +171,12 @@ class _SplashLoadingView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const SizedBox(
+                SizedBox(
                   width: 28,
                   height: 28,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.6,
-                    color: AppTheme.brandEmerald,
+                    color: AppTheme.brandPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),

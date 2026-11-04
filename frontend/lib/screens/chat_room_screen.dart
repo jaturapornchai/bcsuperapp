@@ -236,7 +236,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: status == 'อนุมัติแล้ว'
-              ? AppTheme.deepEmerald
+              ? AppTheme.brandDeep
               : AppTheme.dangerRed,
           content: Text('ประทับตรา "$status" ลงในการ์ดเรียบร้อยแล้ว'),
         ),
@@ -334,7 +334,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       widget.onConversationUpdated?.call();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: AppTheme.deepEmerald,
+          backgroundColor: AppTheme.brandDeep,
           content: Text(
             'อัปโหลด "$fileName" เก็บถาวรบน MinIO เรียบร้อย (ส่งผิดกดลบทำลายไฟล์ได้ทันที)',
           ),
@@ -374,12 +374,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppTheme.softEmerald,
+                        color: AppTheme.brandSoft,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.cloud_upload_rounded,
-                        color: AppTheme.deepEmerald,
+                        color: AppTheme.brandDeep,
                         size: 20,
                       ),
                     ),
@@ -414,9 +414,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   tileColor: AppTheme.surfaceBg,
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.folder_open_rounded,
-                    color: AppTheme.brandEmerald,
+                    color: AppTheme.brandPrimary,
                   ),
                   title: const Text(
                     'เลือกไฟล์หรือรูปภาพจากเครื่องของคุณ',
@@ -578,8 +578,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: AppTheme.deepEmerald,
+        SnackBar(
+          backgroundColor: AppTheme.brandDeep,
           content: Text(
             'บันทึกข้อความเข้า BC Keep & โน้ตประจำห้องเรียบร้อยแล้ว',
           ),
@@ -638,12 +638,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.widgets_rounded,
-                      color: AppTheme.brandEmerald,
+                      color: AppTheme.brandPrimary,
                       size: 22,
                     ),
                     SizedBox(width: 8),
@@ -766,8 +766,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           );
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: AppTheme.deepEmerald,
+            SnackBar(
+              backgroundColor: AppTheme.brandDeep,
               content: Text(
                 'บันทึกผลสรุป AI เข้า BC Keep & โน้ตห้องเรียบร้อยแล้ว!',
               ),
@@ -1098,7 +1098,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             text: _conversation.folderLabel,
             backgroundColor: isWork
                 ? AppTheme.workBlue.withValues(alpha: 0.25)
-                : AppTheme.brandEmerald.withValues(alpha: 0.22),
+                : AppTheme.brandPrimary.withValues(alpha: 0.22),
             textColor: isWork
                 ? const Color(0xFF93C5FD)
                 : const Color(0xFF4ADE80),
@@ -1220,7 +1220,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     () => _showSecurityWatermark = !_showSecurityWatermark,
                   ),
                   color: _showSecurityWatermark
-                      ? AppTheme.brandEmerald
+                      ? AppTheme.brandPrimary
                       : const Color(0xFF94A3B8),
                 ),
                 _headerIconButton(
@@ -1238,7 +1238,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 icon: Icons.search_rounded,
                 tooltip: 'ค้นหาข้อความในห้องนี้',
                 onPressed: _toggleSearchBar,
-                color: _showSearchBar ? AppTheme.brandEmerald : iconIdle,
+                color: _showSearchBar ? AppTheme.brandPrimary : iconIdle,
               ),
               // Theme picker (wide) / overflow menu with the hidden actions (compact).
               PopupMenuButton<Object>(
@@ -1273,7 +1273,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             Icons.verified_user_rounded,
                             size: 18,
                             color: _showSecurityWatermark
-                                ? AppTheme.brandEmerald
+                                ? AppTheme.brandPrimary
                                 : AppTheme.slateMuted,
                           ),
                           const SizedBox(width: 10),
@@ -1532,7 +1532,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final readColor = themeMode.isDark
         ? const Color(0xFF4ADE80)
         : onLight
-        ? AppTheme.deepEmerald
+        ? AppTheme.brandDeep
         : Colors.white;
     final nameColor = themeMode.isDark
         ? const Color(0xFFE2E8F0)
@@ -1959,14 +1959,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ],
             ),
           ),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'keep',
             child: Row(
               children: [
                 Icon(
                   Icons.bookmark_add_rounded,
                   size: 17,
-                  color: AppTheme.brandEmerald,
+                  color: AppTheme.brandPrimary,
                 ),
                 SizedBox(width: 8),
                 Text('บันทึกเข้า BC Keep ถาวร', style: TextStyle(fontSize: 13)),
@@ -2054,9 +2054,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.bookmark_add_rounded,
-                  color: AppTheme.brandEmerald,
+                  color: AppTheme.brandPrimary,
                 ),
                 title: const Text('บันทึกเข้า BC Keep & โน้ตกลุ่มถาวร'),
                 onTap: () {
@@ -2132,7 +2132,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           decoration: BoxDecoration(
             color: isMe ? null : AppTheme.receivedBubble,
             gradient: isMe
-                ? const LinearGradient(
+                ? LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [Color(0xFFB6F7C4), AppTheme.sentBubble],
@@ -2172,19 +2172,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
-        border: const Border(
-          left: BorderSide(color: AppTheme.deepEmerald, width: 3),
-        ),
+        border: Border(left: BorderSide(color: AppTheme.brandDeep, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'ตอบกลับ ${reply.senderName}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppTheme.deepEmerald,
+              color: AppTheme.brandDeep,
             ),
           ),
           Text(
@@ -2280,19 +2278,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.cloud_done_rounded,
                   size: 14,
-                  color: AppTheme.deepEmerald,
+                  color: AppTheme.brandDeep,
                 ),
                 const SizedBox(width: 5),
                 Flexible(
                   child: Text(
                     '$fileName · เก็บถาวรบน MinIO (ไม่หมดอายุ)',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.deepEmerald,
+                      color: AppTheme.brandDeep,
                     ),
                   ),
                 ),
@@ -2412,10 +2410,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        const PillBadge(
+                        PillBadge(
                           text: 'MinIO ไม่หมดอายุ',
-                          backgroundColor: AppTheme.softEmerald,
-                          textColor: AppTheme.deepEmerald,
+                          backgroundColor: AppTheme.brandSoft,
+                          textColor: AppTheme.brandDeep,
                           icon: Icons.verified_rounded,
                         ),
                       ],
@@ -2433,10 +2431,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     }
                   },
                   tooltip: 'ดาวน์โหลด / เปิดไฟล์จาก MinIO',
-                  icon: const Icon(
-                    Icons.download_rounded,
-                    color: AppTheme.deepEmerald,
-                  ),
+                  icon: Icon(Icons.download_rounded, color: AppTheme.brandDeep),
                 ),
               ],
             ],
@@ -2514,9 +2509,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       return chip(
         icon: Icons.check_circle_rounded,
         label: 'รับงานโดย: $actor • กดเมื่อเสร็จ',
-        fg: AppTheme.deepEmerald,
-        bg: AppTheme.softEmerald,
-        border: AppTheme.brandEmerald,
+        fg: AppTheme.brandDeep,
+        bg: AppTheme.brandSoft,
+        border: AppTheme.brandPrimary,
         onTap: () => _handleTaskAction(msg, 'done'),
       );
     }
@@ -2705,12 +2700,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     decoration: BoxDecoration(
                       color: isRejected
                           ? const Color(0xFFFEF2F2)
-                          : AppTheme.softEmerald,
+                          : AppTheme.brandSoft,
                       borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                       border: Border.all(
                         color: isRejected
                             ? AppTheme.dangerRed
-                            : AppTheme.brandEmerald,
+                            : AppTheme.brandPrimary,
                       ),
                     ),
                     child: Row(
@@ -2723,7 +2718,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           size: 16,
                           color: isRejected
                               ? AppTheme.dangerRed
-                              : AppTheme.deepEmerald,
+                              : AppTheme.brandDeep,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
@@ -2736,7 +2731,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                               fontWeight: FontWeight.w800,
                               color: isRejected
                                   ? AppTheme.dangerRed
-                                  : AppTheme.deepEmerald,
+                                  : AppTheme.brandDeep,
                             ),
                           ),
                         ),
@@ -2754,7 +2749,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             onPressed: () =>
                                 _handleApproveFlexCard(msg, 'อนุมัติแล้ว'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.brandEmerald,
+                              backgroundColor: AppTheme.brandPrimary,
                               foregroundColor: Colors.white,
                               minimumSize: Size.zero,
                               padding: const EdgeInsets.symmetric(
@@ -2968,11 +2963,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.reply_rounded,
-            size: 18,
-            color: AppTheme.deepEmerald,
-          ),
+          Icon(Icons.reply_rounded, size: 18, color: AppTheme.brandDeep),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -3125,8 +3116,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               onTap: () => _openAiAssistModal(initialMode: 'smart_reply'),
               icon: Icons.tips_and_updates_rounded,
               label: 'คิดคำตอบด่วนจากแชทล่าสุด',
-              fg: AppTheme.deepEmerald,
-              bg: AppTheme.softEmerald,
+              fg: AppTheme.brandDeep,
+              bg: AppTheme.brandSoft,
             ),
             const SizedBox(width: 8),
             _modeChip(
@@ -3147,7 +3138,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ? const Color(0xFF991B1B)
         : _selectedPriority == 'urgent'
         ? AppTheme.dangerRed
-        : AppTheme.brandEmerald;
+        : AppTheme.brandPrimary;
 
     return GlassPanel(
       blur: 20,
@@ -3240,10 +3231,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   onPressed: _openMiniAppPicker,
                   visualDensity: VisualDensity.compact,
                   tooltip: 'ส่งการ์ดจากระบบเสริม (Flex Card)',
-                  icon: const Icon(
-                    Icons.widgets_outlined,
-                    color: AppTheme.deepEmerald,
-                  ),
+                  icon: Icon(Icons.widgets_outlined, color: AppTheme.brandDeep),
                 ),
                 IconButton(
                   onPressed: () =>
@@ -3253,7 +3241,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   icon: Icon(
                     Icons.emoji_emotions_outlined,
                     color: _showStickerPicker
-                        ? AppTheme.brandEmerald
+                        ? AppTheme.brandPrimary
                         : AppTheme.slateBody,
                   ),
                 ),
@@ -3463,9 +3451,9 @@ class _RoomVaultDialogState extends State<_RoomVaultDialog>
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.cloud_done_rounded,
-                        color: AppTheme.brandEmerald,
+                        color: AppTheme.brandPrimary,
                         size: 22,
                       ),
                       const SizedBox(width: 10),
@@ -3509,7 +3497,7 @@ class _RoomVaultDialogState extends State<_RoomVaultDialog>
                       fontWeight: FontWeight.w700,
                       height: 1.4,
                     ),
-                    indicatorColor: AppTheme.brandEmerald,
+                    indicatorColor: AppTheme.brandPrimary,
                     labelColor: Colors.white,
                     unselectedLabelColor: const Color(0xFF94A3B8),
                     tabs: [
@@ -3642,10 +3630,7 @@ class _RoomVaultDialogState extends State<_RoomVaultDialog>
                   }
                 },
                 tooltip: 'ดาวน์โหลดไฟล์',
-                icon: const Icon(
-                  Icons.download_rounded,
-                  color: AppTheme.deepEmerald,
-                ),
+                icon: Icon(Icons.download_rounded, color: AppTheme.brandDeep),
               ),
               IconButton(
                 onPressed: () async {
@@ -3968,10 +3953,10 @@ class _AiSummaryModalState extends State<_AiSummaryModal> {
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppTheme.softEmerald,
+                                color: AppTheme.brandSoft,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: AppTheme.brandEmerald.withValues(
+                                  color: AppTheme.brandPrimary.withValues(
                                     alpha: 0.35,
                                   ),
                                 ),
@@ -3979,14 +3964,14 @@ class _AiSummaryModalState extends State<_AiSummaryModal> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Row(
+                                  Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
                                     children: [
                                       Icon(
                                         Icons.task_alt_rounded,
                                         size: 17,
-                                        color: AppTheme.deepEmerald,
+                                        color: AppTheme.brandDeep,
                                       ),
                                       SizedBox(width: 6),
                                       Text(
@@ -3994,7 +3979,7 @@ class _AiSummaryModalState extends State<_AiSummaryModal> {
                                         style: TextStyle(
                                           fontSize: 13.5,
                                           fontWeight: FontWeight.w800,
-                                          color: AppTheme.deepEmerald,
+                                          color: AppTheme.brandDeep,
                                         ),
                                       ),
                                     ],
@@ -4007,11 +3992,11 @@ class _AiSummaryModalState extends State<_AiSummaryModal> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
+                                          Text(
                                             '• ',
                                             style: TextStyle(
                                               fontWeight: FontWeight.w800,
-                                              color: AppTheme.deepEmerald,
+                                              color: AppTheme.brandDeep,
                                             ),
                                           ),
                                           Expanded(
@@ -4103,10 +4088,10 @@ class _AiSummaryModalState extends State<_AiSummaryModal> {
                         Navigator.pop(context);
                         await widget.onSaveToKeep(text);
                       },
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.bookmark_add_rounded,
                         size: 17,
-                        color: AppTheme.deepEmerald,
+                        color: AppTheme.brandDeep,
                       ),
                       label: const Text('บันทึกเข้า BC Keep'),
                     ),
@@ -4393,7 +4378,7 @@ class _AiWritingAssistModalState extends State<_AiWritingAssistModal> {
                               await widget.onSendImmediately(txt);
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.brandEmerald,
+                              backgroundColor: AppTheme.brandPrimary,
                             ),
                             icon: const Icon(Icons.send_rounded, size: 16),
                             label: const Text('ส่งเข้าห้องแชททันที'),
