@@ -247,7 +247,10 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
-  Future<void> _openChatWithFriend(AppUser friend, {required bool isWide}) async {
+  Future<void> _openChatWithFriend(
+    AppUser friend, {
+    required bool isWide,
+  }) async {
     try {
       final conv = await ApiService.instance.openDirectConversation(friend.id);
       await _refreshConversationsAndFriends();
@@ -255,9 +258,9 @@ class _MainShellState extends State<MainShell> {
       _selectConversation(conv, isWide: isWide);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ไม่สามารถเปิดห้องสนทนาได้: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('ไม่สามารถเปิดห้องสนทนาได้: $e')));
     }
   }
 
@@ -340,7 +343,7 @@ class _MainShellState extends State<MainShell> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: AppTheme.lineEmerald.withValues(alpha: 0.4),
+                      color: AppTheme.brandEmerald.withValues(alpha: 0.4),
                       width: 2,
                     ),
                   ),
@@ -427,7 +430,7 @@ class _MainShellState extends State<MainShell> {
               TextField(
                 controller: bcIdCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'BC ID (สำหรับให้เพื่อนค้นหาเหมือน LINE ID)',
+                  labelText: 'BC ID (ให้เพื่อนใช้ค้นหาคุณ)',
                   prefixIcon: Icon(Icons.alternate_email_rounded),
                 ),
               ),
@@ -467,9 +470,9 @@ class _MainShellState extends State<MainShell> {
                 );
               } catch (e) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('อัปเดตไม่สำเร็จ: $e')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('อัปเดตไม่สำเร็จ: $e')));
               }
             },
             child: const Text('บันทึกการเปลี่ยนแปลง'),
@@ -521,9 +524,9 @@ class _MainShellState extends State<MainShell> {
                 );
               } catch (e) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('ไม่พบผู้ใช้: $q')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('ไม่พบผู้ใช้: $q')));
               }
             }
 
@@ -831,28 +834,43 @@ class _MainShellState extends State<MainShell> {
                     border: Border(
                       right: BorderSide(color: AppTheme.borderSubtle),
                     ),
+                    boxShadow: AppTheme.shadowSm,
                   ),
-                  child: _selectedIndex == 0
-                      ? _buildHomeTab(isWide: true)
-                      : _buildChatsTab(isWide: true),
+                  child: AnimatedSwitcher(
+                    duration: AppTheme.motionMed,
+                    transitionBuilder: AppTheme.fadeSlideTransition,
+                    child: KeyedSubtree(
+                      key: ValueKey('list-$_selectedIndex'),
+                      child: _selectedIndex == 0
+                          ? _buildHomeTab(isWide: true)
+                          : _buildChatsTab(isWide: true),
+                    ),
+                  ),
                 ),
               ),
               Expanded(
-                child: _activeConversation != null
-                    ? ChatRoomScreen(
-                        conversation: _activeConversation!,
-                        allConversations: _conversations,
-                        miniApps: _miniApps.where((m) => m.enabled).toList(),
-                        isEmbedded: true,
-                        onConversationUpdated: _refreshConversationsAndFriends,
-                        onThemeChanged: (_) => setState(() {}),
-                      )
-                    : _buildEmptyChatPlaceholder(),
+                child: AnimatedSwitcher(
+                  duration: AppTheme.motionMed,
+                  transitionBuilder: AppTheme.fadeSlideTransition,
+                  child: _activeConversation != null
+                      ? ChatRoomScreen(
+                          key: ValueKey('room-${_activeConversation!.id}'),
+                          conversation: _activeConversation!,
+                          allConversations: _conversations,
+                          miniApps: _miniApps.where((m) => m.enabled).toList(),
+                          isEmbedded: true,
+                          onConversationUpdated:
+                              _refreshConversationsAndFriends,
+                          onThemeChanged: (_) => setState(() {}),
+                        )
+                      : KeyedSubtree(
+                          key: const ValueKey('room-empty'),
+                          child: _buildEmptyChatPlaceholder(),
+                        ),
+                ),
               ),
             ] else
-              Expanded(
-                child: _buildSelectedTabBody(isWide: true),
-              ),
+              Expanded(child: _buildSelectedTabBody(isWide: true)),
           ],
         ),
       );
@@ -861,68 +879,88 @@ class _MainShellState extends State<MainShell> {
     // Mobile / Narrow Layout
     return Scaffold(
       body: SafeArea(
-        child: _buildSelectedTabBody(isWide: false),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (idx) {
-          setState(() => _selectedIndex = idx);
-          if (idx == 4) _loadAdminDataQuietly();
-        },
-        backgroundColor: Colors.white,
-        indicatorColor: AppTheme.softEmerald,
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(
-              Icons.home_rounded,
-              color: AppTheme.deepEmerald,
-            ),
-            label: 'หน้าหลัก',
+        child: AnimatedSwitcher(
+          duration: AppTheme.motionMed,
+          transitionBuilder: AppTheme.fadeSlideTransition,
+          child: KeyedSubtree(
+            key: ValueKey('tab-$_selectedIndex'),
+            child: _buildSelectedTabBody(isWide: false),
           ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: _totalUnreadCount > 0,
-              backgroundColor: AppTheme.lineEmerald,
-              label: Text('$_totalUnreadCount'),
-              child: const Icon(Icons.chat_bubble_outline_rounded),
+        ),
+      ),
+      bottomNavigationBar: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: AppTheme.borderSubtle)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x140F172A),
+              blurRadius: 18,
+              offset: Offset(0, -4),
             ),
-            selectedIcon: Badge(
-              isLabelVisible: _totalUnreadCount > 0,
-              backgroundColor: AppTheme.lineEmerald,
-              label: Text('$_totalUnreadCount'),
-              child: const Icon(
-                Icons.chat_bubble_rounded,
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (idx) {
+            setState(() => _selectedIndex = idx);
+            if (idx == 4) _loadAdminDataQuietly();
+          },
+          backgroundColor: Colors.white,
+          indicatorColor: AppTheme.softEmerald,
+          destinations: [
+            const NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(
+                Icons.home_rounded,
                 color: AppTheme.deepEmerald,
               ),
+              label: 'หน้าหลัก',
             ),
-            label: 'แชท',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.widgets_outlined),
-            selectedIcon: Icon(
-              Icons.widgets_rounded,
-              color: AppTheme.deepEmerald,
+            NavigationDestination(
+              icon: Badge(
+                isLabelVisible: _totalUnreadCount > 0,
+                backgroundColor: AppTheme.brandEmerald,
+                label: Text('$_totalUnreadCount'),
+                child: const Icon(Icons.chat_bubble_outline_rounded),
+              ),
+              selectedIcon: Badge(
+                isLabelVisible: _totalUnreadCount > 0,
+                backgroundColor: AppTheme.brandEmerald,
+                label: Text('$_totalUnreadCount'),
+                child: const Icon(
+                  Icons.chat_bubble_rounded,
+                  color: AppTheme.deepEmerald,
+                ),
+              ),
+              label: 'แชท',
             ),
-            label: 'บริการเสริม',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.bookmark_border_rounded),
-            selectedIcon: Icon(
-              Icons.bookmark_rounded,
-              color: AppTheme.deepEmerald,
+            const NavigationDestination(
+              icon: Icon(Icons.widgets_outlined),
+              selectedIcon: Icon(
+                Icons.widgets_rounded,
+                color: AppTheme.deepEmerald,
+              ),
+              label: 'บริการเสริม',
             ),
-            label: 'BC Keep',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.admin_panel_settings_outlined),
-            selectedIcon: Icon(
-              Icons.admin_panel_settings_rounded,
-              color: AppTheme.deepEmerald,
+            const NavigationDestination(
+              icon: Icon(Icons.bookmark_border_rounded),
+              selectedIcon: Icon(
+                Icons.bookmark_rounded,
+                color: AppTheme.deepEmerald,
+              ),
+              label: 'BC Keep',
             ),
-            label: 'หลังบ้าน',
-          ),
-        ],
+            const NavigationDestination(
+              icon: Icon(Icons.admin_panel_settings_outlined),
+              selectedIcon: Icon(
+                Icons.admin_panel_settings_rounded,
+                color: AppTheme.deepEmerald,
+              ),
+              label: 'หลังบ้าน',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -952,12 +990,14 @@ class _MainShellState extends State<MainShell> {
       (3, Icons.bookmark_rounded, 'BC Keep', 0),
       (4, Icons.admin_panel_settings_rounded, 'หลังบ้าน', 0),
     ];
+    const idleColor = Color(0xFF94A3B8);
 
     return Container(
       width: 84,
-      color: AppTheme.slateDark,
+      decoration: const BoxDecoration(gradient: AppTheme.navyGradient),
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           InkWell(
             onTap: _showEditProfileDialog,
@@ -969,23 +1009,25 @@ class _MainShellState extends State<MainShell> {
               showOnline: true,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: AppTheme.lineEmerald.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(6),
+              color: AppTheme.brandEmerald.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(999),
             ),
             child: const Text(
-              'BC LINE',
+              'Super App',
+              maxLines: 1,
               style: TextStyle(
                 color: Color(0xFF4ADE80),
-                fontSize: 10,
+                fontSize: 9.5,
+                height: 1.35,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
           Expanded(
             child: Column(
               children: navItems.map((item) {
@@ -994,53 +1036,60 @@ class _MainShellState extends State<MainShell> {
                 final label = item.$3;
                 final badgeCount = item.$4;
                 final selected = _selectedIndex == idx;
+                final fg = selected ? Colors.white : idleColor;
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () {
-                      setState(() => _selectedIndex = idx);
-                      if (idx == 4) _loadAdminDataQuietly();
-                    },
-                    child: Container(
-                      width: 66,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? AppTheme.lineEmerald
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Badge(
-                            isLabelVisible: badgeCount > 0,
-                            backgroundColor: AppTheme.dangerRed,
-                            label: Text('$badgeCount'),
-                            child: Icon(
-                              icon,
-                              color: selected
-                                  ? Colors.white
-                                  : const Color(0xFF94A3B8),
-                              size: 22,
-                            ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      hoverColor: Colors.white.withValues(alpha: 0.08),
+                      onTap: () {
+                        setState(() => _selectedIndex = idx);
+                        if (idx == 4) _loadAdminDataQuietly();
+                      },
+                      child: AnimatedContainer(
+                        duration: AppTheme.motionMed,
+                        curve: AppTheme.motionCurve,
+                        width: 68,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: selected ? AppTheme.brandGradient : null,
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusMd,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            label,
-                            style: TextStyle(
-                              color: selected
-                                  ? Colors.white
-                                  : const Color(0xFF94A3B8),
-                              fontSize: 10.5,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                          boxShadow: selected
+                              ? AppTheme.glow(AppTheme.brandEmerald)
+                              : const [],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Badge(
+                              isLabelVisible: badgeCount > 0,
+                              backgroundColor: AppTheme.dangerRed,
+                              label: Text('$badgeCount'),
+                              child: Icon(icon, color: fg, size: 22),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: fg,
+                                fontSize: 10.5,
+                                height: 1.35,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1051,18 +1100,12 @@ class _MainShellState extends State<MainShell> {
           IconButton(
             onPressed: _showMyQrDialog,
             tooltip: 'QR Code ของฉัน',
-            icon: const Icon(
-              Icons.qr_code_2_rounded,
-              color: Color(0xFFCBD5E1),
-            ),
+            icon: const Icon(Icons.qr_code_2_rounded, color: Color(0xFFCBD5E1)),
           ),
           IconButton(
             onPressed: widget.onLoggedOut,
             tooltip: 'สลับบัญชี Gmail / ออกจากระบบ',
-            icon: const Icon(
-              Icons.logout_rounded,
-              color: Color(0xFFF87171),
-            ),
+            icon: const Icon(Icons.logout_rounded, color: Color(0xFFF87171)),
           ),
         ],
       ),
@@ -1071,35 +1114,62 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildEmptyChatPlaceholder() {
     return Container(
-      color: const Color(0xFF8CABD9),
-      alignment: Alignment.center,
-      child: Container(
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppTheme.surfaceBg, AppTheme.softEmerald],
         ),
-        child: const Column(
+      ),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(24),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          boxShadow: AppTheme.shadowLg,
+        ),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(
-              Icons.chat_bubble_outline_rounded,
-              size: 48,
-              color: AppTheme.lineEmerald,
+            Container(
+              width: 72,
+              height: 72,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: AppTheme.brandGradient,
+                shape: BoxShape.circle,
+                boxShadow: AppTheme.glow(AppTheme.brandEmerald),
+              ),
+              child: const Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 34,
+                color: Colors.white,
+              ),
             ),
-            SizedBox(height: 12),
-            Text(
+            const SizedBox(height: 20),
+            const Text(
               'เลือกห้องแชทหรือเพื่อนด้านซ้ายเพื่อเริ่มสนทนา',
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
+                height: 1.4,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.slateDark,
               ),
             ),
-            SizedBox(height: 4),
-            Text(
+            const SizedBox(height: 8),
+            const Text(
               'ซิงค์แชทข้ามเครื่องด้วย Gmail · ไฟล์และรูปภาพเก็บถาวรบน MinIO ไม่หมดอายุ',
-              style: TextStyle(fontSize: 12.5, color: AppTheme.slateMuted),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.45,
+                color: AppTheme.slateMuted,
+              ),
             ),
           ],
         ),
@@ -1110,6 +1180,109 @@ class _MainShellState extends State<MainShell> {
   // ---------------------------------------------------------------------------
   // TAB 0: หน้าหลัก (HOME — โปรไฟล์, QR, เพิ่มเพื่อน, บริการเสริม, กลุ่ม & เพื่อน)
   // ---------------------------------------------------------------------------
+  /// หัวข้อส่วน (titleMedium w700 + คำอธิบายจาง ๆ) ใช้ร่วมทุกแท็บ
+  Widget _sectionHeader(
+    String title, {
+    String? subtitle,
+    Widget? trailing,
+    EdgeInsetsGeometry padding = const EdgeInsets.only(bottom: 12),
+  }) {
+    return Padding(
+      padding: padding,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.slateDark,
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      color: AppTheme.slateMuted,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+
+  /// ปุ่มลัด: ไอคอนในกรอบมนสีอ่อน + ป้ายชื่อ อยู่กึ่งกลาง
+  Widget _quickActionTile({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            border: Border.all(color: AppTheme.borderSubtle),
+            boxShadow: AppTheme.shadowSm,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                ),
+                child: Icon(icon, size: 20, color: color),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.slateDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHomeTab({required bool isWide}) {
     final groups = _conversations.where((c) => c.isGroup).toList();
     final officials = _conversations.where((c) => c.isOfficial).toList();
@@ -1132,18 +1305,23 @@ class _MainShellState extends State<MainShell> {
                 'หน้าหลัก',
                 style: TextStyle(
                   fontSize: 20,
+                  height: 1.35,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.slateDark,
                 ),
               ),
               const SizedBox(width: 8),
-              const PillBadge(
-                text: 'Gmail Cloud Sync',
-                backgroundColor: AppTheme.softEmerald,
-                textColor: AppTheme.deepEmerald,
-                icon: Icons.cloud_done_rounded,
+              const Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: PillBadge(
+                    text: 'Gmail Cloud Sync',
+                    backgroundColor: AppTheme.softEmerald,
+                    textColor: AppTheme.deepEmerald,
+                    icon: Icons.cloud_done_rounded,
+                  ),
+                ),
               ),
-              const Spacer(),
               IconButton(
                 onPressed: () => _showAddFriendDialog(isWide: isWide),
                 tooltip: 'เพิ่มเพื่อนด้วย BC ID / Gmail / QR',
@@ -1166,16 +1344,15 @@ class _MainShellState extends State<MainShell> {
 
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             children: [
-              // My Profile Card
+              // My Profile Card (hero)
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                  ),
-                  borderRadius: BorderRadius.circular(18),
+                  gradient: AppTheme.navyGradient,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  boxShadow: AppTheme.shadowMd,
                 ),
                 child: Column(
                   children: [
@@ -1203,6 +1380,7 @@ class _MainShellState extends State<MainShell> {
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
+                                        height: 1.35,
                                         fontWeight: FontWeight.w800,
                                       ),
                                     ),
@@ -1210,12 +1388,13 @@ class _MainShellState extends State<MainShell> {
                                   const SizedBox(width: 6),
                                   PillBadge(
                                     text: _user.department,
-                                    backgroundColor: AppTheme.lineEmerald
+                                    backgroundColor: AppTheme.brandEmerald
                                         .withValues(alpha: 0.25),
                                     textColor: const Color(0xFF4ADE80),
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 2),
                               Text(
                                 'BC ID: @${_user.bcId} · ${_user.email}',
                                 maxLines: 1,
@@ -1223,10 +1402,10 @@ class _MainShellState extends State<MainShell> {
                                 style: const TextStyle(
                                   color: Color(0xFF4ADE80),
                                   fontSize: 12,
+                                  height: 1.4,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 2),
                               Text(
                                 _user.statusMessage,
                                 maxLines: 1,
@@ -1234,6 +1413,7 @@ class _MainShellState extends State<MainShell> {
                                 style: const TextStyle(
                                   color: Color(0xFFCBD5E1),
                                   fontSize: 12,
+                                  height: 1.4,
                                 ),
                               ),
                             ],
@@ -1241,17 +1421,17 @@ class _MainShellState extends State<MainShell> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: SizedBox(
-                            height: 36,
+                            height: 40,
                             child: ElevatedButton.icon(
                               onPressed: _showMyQrDialog,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.lineEmerald,
+                                backgroundColor: AppTheme.brandEmerald,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
                                 ),
@@ -1267,7 +1447,7 @@ class _MainShellState extends State<MainShell> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: SizedBox(
-                            height: 36,
+                            height: 40,
                             child: OutlinedButton.icon(
                               onPressed: _showEditProfileDialog,
                               style: OutlinedButton.styleFrom(
@@ -1299,82 +1479,62 @@ class _MainShellState extends State<MainShell> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _showAddFriendDialog(isWide: isWide),
-                      icon: const Icon(
-                        Icons.person_add_alt_1_rounded,
-                        size: 17,
-                        color: AppTheme.deepEmerald,
-                      ),
-                      label: const Text(
-                        'เพิ่มเพื่อน',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
+                    child: _quickActionTile(
+                      icon: Icons.person_add_alt_1_rounded,
+                      label: 'เพิ่มเพื่อน',
+                      color: AppTheme.deepEmerald,
+                      onTap: () => _showAddFriendDialog(isWide: isWide),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _showCreateGroupDialog(isWide: isWide),
-                      icon: const Icon(
-                        Icons.group_add_rounded,
-                        size: 18,
-                        color: AppTheme.workBlue,
-                      ),
-                      label: const Text(
-                        'สร้างกลุ่ม',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
+                    child: _quickActionTile(
+                      icon: Icons.group_add_rounded,
+                      label: 'สร้างกลุ่ม',
+                      color: AppTheme.workBlue,
+                      onTap: () => _showCreateGroupDialog(isWide: isWide),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 24),
 
               // Quick Mini-Apps Strip
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'บริการเสริมด่วน (Super App Mini-Apps)',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.slateDark,
-                    ),
+              _sectionHeader(
+                'บริการเสริมด่วน',
+                subtitle: 'เปิดใช้งานระบบเสริมขององค์กรได้ทันที',
+                padding: const EdgeInsets.only(bottom: 8),
+                trailing: TextButton(
+                  onPressed: () => setState(() => _selectedIndex = 2),
+                  child: const Text(
+                    'ดูทั้งหมด',
+                    style: TextStyle(fontSize: 12.5),
                   ),
-                  TextButton(
-                    onPressed: () => setState(() => _selectedIndex = 2),
-                    child: const Text(
-                      'ดูทั้งหมด >',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
+                ),
               ),
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  mainAxisExtent: 60,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
+                  mainAxisExtent: 64,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
                 ),
                 itemCount: enabledMiniApps.length,
                 itemBuilder: (ctx, i) {
                   final app = enabledMiniApps[i];
                   final color = AppTheme.parseHexColor(app.color);
                   return InkWell(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     onTap: () => _openMiniApp(app),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceBg,
-                        borderRadius: BorderRadius.circular(14),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                         border: Border.all(color: AppTheme.borderSubtle),
+                        boxShadow: AppTheme.shadowSm,
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1392,7 +1552,7 @@ class _MainShellState extends State<MainShell> {
                               size: 18,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               app.title,
@@ -1400,6 +1560,7 @@ class _MainShellState extends State<MainShell> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: 12,
+                                height: 1.35,
                                 fontWeight: FontWeight.w700,
                                 color: AppTheme.slateDark,
                               ),
@@ -1411,19 +1572,15 @@ class _MainShellState extends State<MainShell> {
                   );
                 },
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 24),
 
               // Official Accounts Section
               if (officials.isNotEmpty) ...[
-                Text(
-                  'บัญชีทางการ (Official Accounts · ${officials.length})',
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.slateMuted,
-                  ),
+                _sectionHeader(
+                  'บัญชีทางการ (${officials.length})',
+                  subtitle: 'ประกาศสำคัญและข่าวสารขององค์กร',
+                  padding: const EdgeInsets.only(bottom: 4),
                 ),
-                const SizedBox(height: 6),
                 ...officials.map(
                   (c) => ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 6),
@@ -1449,19 +1606,14 @@ class _MainShellState extends State<MainShell> {
                     onTap: () => _selectConversation(c, isWide: isWide),
                   ),
                 ),
-                const Divider(height: 18),
+                const SizedBox(height: 12),
               ],
 
               // Groups Section
-              Text(
+              _sectionHeader(
                 'กลุ่มสนทนา (${groups.length})',
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.slateMuted,
-                ),
+                padding: const EdgeInsets.only(bottom: 4),
               ),
-              const SizedBox(height: 6),
               ...groups.map(
                 (g) => ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 6),
@@ -1505,18 +1657,13 @@ class _MainShellState extends State<MainShell> {
                   onTap: () => _selectConversation(g, isWide: isWide),
                 ),
               ),
-              const Divider(height: 18),
+              const SizedBox(height: 12),
 
               // Friends Section
-              Text(
+              _sectionHeader(
                 'เพื่อนร่วมงานและผู้ติดต่อ (${_friends.length})',
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.slateMuted,
-                ),
+                padding: const EdgeInsets.only(bottom: 4),
               ),
-              const SizedBox(height: 6),
               ..._friends.map(
                 (f) => ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 6),
@@ -1573,7 +1720,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   // ---------------------------------------------------------------------------
-  // TAB 1: แชท (CHATS — แยกหมวดโฟลเดอร์ + ค้นหาข้ามห้อง + รายการแชทเหมือน LINE)
+  // TAB 1: แชท (CHATS — แยกหมวดโฟลเดอร์ + ค้นหาข้ามห้อง + รายการแชท)
   // ---------------------------------------------------------------------------
   Widget _buildChatsTab({required bool isWide}) {
     final folders = [
@@ -1603,6 +1750,7 @@ class _MainShellState extends State<MainShell> {
                 'แชท',
                 style: TextStyle(
                   fontSize: 20,
+                  height: 1.35,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.slateDark,
                 ),
@@ -1611,7 +1759,7 @@ class _MainShellState extends State<MainShell> {
               if (_totalUnreadCount > 0)
                 PillBadge(
                   text: 'ยังไม่อ่าน $_totalUnreadCount',
-                  backgroundColor: AppTheme.lineEmerald,
+                  backgroundColor: AppTheme.brandEmerald,
                   textColor: Colors.white,
                 ),
               const Spacer(),
@@ -1653,40 +1801,50 @@ class _MainShellState extends State<MainShell> {
 
         // Folder Filter Bar (Solves Work vs Personal Chat Clutter!)
         SizedBox(
-          height: 40,
+          height: 44,
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             scrollDirection: Axis.horizontal,
             itemCount: folders.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 6),
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (ctx, i) {
               final code = folders[i].$1;
               final label = folders[i].$2;
               final active = _selectedChatFolder == code;
 
               return Center(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(999),
-                  onTap: () => setState(() => _selectedChatFolder = code),
-                  child: Container(
-                    height: 30,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: active ? AppTheme.slateDark : AppTheme.surfaceBg,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: active
-                            ? AppTheme.slateDark
-                            : AppTheme.borderSubtle,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: () => setState(() => _selectedChatFolder = code),
+                    child: AnimatedContainer(
+                      duration: AppTheme.motionFast,
+                      curve: AppTheme.motionCurve,
+                      height: 32,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: active ? AppTheme.slateDark : AppTheme.surfaceBg,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: active
+                              ? AppTheme.slateDark
+                              : AppTheme.borderSubtle,
+                        ),
+                        boxShadow: active ? AppTheme.shadowSm : const [],
                       ),
-                    ),
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                        color: active ? Colors.white : AppTheme.slateBody,
+                      child: AnimatedDefaultTextStyle(
+                        duration: AppTheme.motionFast,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          height: 1.35,
+                          fontWeight: active
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: active ? Colors.white : AppTheme.slateBody,
+                        ),
+                        child: Text(label, maxLines: 1),
                       ),
                     ),
                   ),
@@ -1695,7 +1853,7 @@ class _MainShellState extends State<MainShell> {
             },
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         const Divider(height: 1),
 
         // Global message search hits (if searching)
@@ -1757,7 +1915,7 @@ class _MainShellState extends State<MainShell> {
               : ListView.separated(
                   itemCount: items.length,
                   separatorBuilder: (context, index) =>
-                      const Divider(indent: 72, height: 1),
+                      const Divider(indent: 76, height: 1),
                   itemBuilder: (ctx, i) {
                     final conv = items[i];
                     final isSelected =
@@ -1766,128 +1924,182 @@ class _MainShellState extends State<MainShell> {
                       conv.lastMessage?.createdAt ?? conv.updatedAt,
                     );
 
-                    return InkWell(
-                      onTap: () => _selectConversation(conv, isWide: isWide),
-                      child: Container(
-                        color: isSelected
-                            ? AppTheme.softEmerald.withValues(alpha: 0.65)
-                            : Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                    final hasUnread = conv.unreadCount > 0;
+                    return Material(
+                      color: isSelected ? AppTheme.softEmerald : Colors.white,
+                      child: InkWell(
+                        onTap: () => _selectConversation(conv, isWide: isWide),
+                        hoverColor: AppTheme.surfaceBg,
+                        child: Stack(
                           children: [
-                            UserAvatar(
-                              name: conv.name,
-                              avatarUrl: conv.avatarUrl,
-                              radius: 23,
-                              showOnline: !conv.isGroup,
-                              isOfficial: conv.isOfficial,
-                              isGroup: conv.isGroup,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      if (conv.isPinned) ...[
-                                        const Icon(
-                                          Icons.push_pin_rounded,
-                                          size: 14,
-                                          color: AppTheme.goldPin,
-                                        ),
-                                        const SizedBox(width: 4),
-                                      ],
-                                      Flexible(
-                                        child: Text(
-                                          conv.isGroup
-                                              ? '${conv.name} (${conv.memberCount})'
-                                              : conv.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppTheme.slateDark,
+                                  UserAvatar(
+                                    name: conv.name,
+                                    avatarUrl: conv.avatarUrl,
+                                    radius: 23,
+                                    showOnline: !conv.isGroup,
+                                    isOfficial: conv.isOfficial,
+                                    isGroup: conv.isGroup,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        // แถว 1: ปักหมุด · ชื่อ · โฟลเดอร์ · เวลา
+                                        SizedBox(
+                                          height: 22,
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              if (conv.isPinned) ...[
+                                                const Icon(
+                                                  Icons.push_pin_rounded,
+                                                  size: 14,
+                                                  color: AppTheme.goldPin,
+                                                ),
+                                                const SizedBox(width: 4),
+                                              ],
+                                              Expanded(
+                                                child: Text(
+                                                  conv.isGroup
+                                                      ? '${conv.name} (${conv.memberCount})'
+                                                      : conv.name,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontSize: 14.5,
+                                                    height: 1.35,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: AppTheme.slateDark,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              PillBadge(
+                                                text: conv.folderLabel,
+                                                backgroundColor: conv.isWork
+                                                    ? const Color(0xFFDBEAFE)
+                                                    : AppTheme.softEmerald,
+                                                textColor: conv.isWork
+                                                    ? AppTheme.workBlue
+                                                    : AppTheme.deepEmerald,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                timeText,
+                                                maxLines: 1,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  height: 1.35,
+                                                  color: hasUnread
+                                                      ? AppTheme.deepEmerald
+                                                      : AppTheme.slateMuted,
+                                                  fontWeight: hasUnread
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w400,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      PillBadge(
-                                        text: conv.folderLabel,
-                                        backgroundColor: conv.isWork
-                                            ? const Color(0xFFDBEAFE)
-                                            : AppTheme.softEmerald,
-                                        textColor: conv.isWork
-                                            ? AppTheme.workBlue
-                                            : AppTheme.deepEmerald,
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    conv.lastMessage?.previewText ??
-                                        'เริ่มการสนทนา...',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      color: conv.unreadCount > 0
-                                          ? AppTheme.slateDark
-                                          : AppTheme.slateMuted,
-                                      fontWeight: conv.unreadCount > 0
-                                          ? FontWeight.w600
-                                          : FontWeight.w400,
+                                        const SizedBox(height: 2),
+                                        // แถว 2: ข้อความล่าสุด · จำนวนที่ยังไม่อ่าน
+                                        SizedBox(
+                                          height: 22,
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  conv
+                                                          .lastMessage
+                                                          ?.previewText ??
+                                                      'เริ่มการสนทนา...',
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 12.5,
+                                                    height: 1.35,
+                                                    color: hasUnread
+                                                        ? AppTheme.slateDark
+                                                        : AppTheme.slateMuted,
+                                                    fontWeight: hasUnread
+                                                        ? FontWeight.w600
+                                                        : FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (hasUnread) ...[
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  height: 20,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                        minWidth: 20,
+                                                      ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                      ),
+                                                  alignment: Alignment.center,
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        AppTheme.brandEmerald,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          999,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    '${conv.unreadCount}',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      height: 1.2,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  timeText,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppTheme.slateMuted,
+                            if (isSelected)
+                              Positioned(
+                                left: 0,
+                                top: 10,
+                                bottom: 10,
+                                child: Container(
+                                  width: 4,
+                                  decoration: const BoxDecoration(
+                                    color: AppTheme.brandEmerald,
+                                    borderRadius: BorderRadius.horizontal(
+                                      right: Radius.circular(4),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 5),
-                                if (conv.unreadCount > 0)
-                                  Container(
-                                    height: 20,
-                                    constraints: const BoxConstraints(
-                                      minWidth: 20,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.lineEmerald,
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '${conv.unreadCount}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        height: 1.0,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
+                              ),
                           ],
                         ),
                       ),
@@ -1945,12 +2157,15 @@ class _MainShellState extends State<MainShell> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(22),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [Color(0xFF0F172A), Color(0xFF064E3B)],
                     ),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    boxShadow: AppTheme.shadowMd,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -1958,9 +2173,13 @@ class _MainShellState extends State<MainShell> {
                       Container(
                         width: 52,
                         height: 52,
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: AppTheme.lineEmerald,
-                          borderRadius: BorderRadius.circular(14),
+                          gradient: AppTheme.brandGradient,
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusMd,
+                          ),
+                          boxShadow: AppTheme.glow(AppTheme.brandEmerald),
                         ),
                         child: const Icon(
                           Icons.widgets_rounded,
@@ -1978,15 +2197,17 @@ class _MainShellState extends State<MainShell> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 17,
+                                height: 1.35,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            SizedBox(height: 6),
                             Text(
-                              'เปิดใช้งานระบบเสริมองค์กร ส่งการ์ด LINE Flex Message เข้าห้องแชทได้ทันที และเพิ่มระบบใหม่จากหลังบ้านโดยไม่ต้องอัปเดตแอป',
+                              'เปิดใช้งานระบบเสริมองค์กร ส่งการ์ดข้อความ (Flex Card) เข้าห้องแชทได้ทันที และเพิ่มระบบใหม่จากหลังบ้านโดยไม่ต้องอัปเดตแอป',
                               style: TextStyle(
                                 color: Color(0xFFCBD5E1),
                                 fontSize: 13,
+                                height: 1.45,
                               ),
                             ),
                           ],
@@ -1995,19 +2216,20 @@ class _MainShellState extends State<MainShell> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
                   children: activeApps.map((app) {
                     final color = AppTheme.parseHexColor(app.color);
                     return Container(
-                      width: 340,
-                      padding: const EdgeInsets.all(18),
+                      width: isCompact ? double.infinity : 340,
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                         border: Border.all(color: AppTheme.borderSubtle),
+                        boxShadow: AppTheme.shadowSm,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2018,9 +2240,12 @@ class _MainShellState extends State<MainShell> {
                               Container(
                                 width: 46,
                                 height: 46,
+                                alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: color,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusMd,
+                                  ),
                                 ),
                                 child: Icon(
                                   AppTheme.resolveMiniAppIcon(app.icon),
@@ -2035,13 +2260,16 @@ class _MainShellState extends State<MainShell> {
                                   children: [
                                     Text(
                                       app.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         fontSize: 15.5,
+                                        height: 1.35,
                                         fontWeight: FontWeight.w800,
                                         color: AppTheme.slateDark,
                                       ),
                                     ),
-                                    const SizedBox(height: 2),
+                                    const SizedBox(height: 4),
                                     PillBadge(
                                       text: app.category,
                                       backgroundColor: color.withValues(
@@ -2059,10 +2287,11 @@ class _MainShellState extends State<MainShell> {
                             app.subtitle,
                             style: const TextStyle(
                               fontSize: 13,
+                              height: 1.45,
                               color: AppTheme.slateBody,
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 16),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
@@ -2155,10 +2384,11 @@ class _MainShellState extends State<MainShell> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppTheme.softEmerald,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                     border: Border.all(
-                      color: AppTheme.lineEmerald.withValues(alpha: 0.35),
+                      color: AppTheme.brandEmerald.withValues(alpha: 0.35),
                     ),
+                    boxShadow: AppTheme.shadowSm,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -2173,6 +2403,7 @@ class _MainShellState extends State<MainShell> {
                           'BC Keep ซิงค์อัตโนมัติตามบัญชี Gmail (${_user.email}) เก็บข้อความ ลิงก์ และไฟล์สำคัญถาวร ไม่มีวันหมดอายุ',
                           style: const TextStyle(
                             fontSize: 13,
+                            height: 1.45,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.deepEmerald,
                           ),
@@ -2181,18 +2412,21 @@ class _MainShellState extends State<MainShell> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 24),
                 if (_keepNotes.isEmpty)
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(36),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                      boxShadow: AppTheme.shadowSm,
                     ),
                     child: const Text(
                       'ยังไม่มีรายการใน BC Keep กดปุ่ม "สร้างบันทึก Keep ใหม่" หรือกดบันทึกจากข้อความในห้องแชทได้เลย',
-                      style: TextStyle(color: AppTheme.slateMuted),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppTheme.slateMuted, height: 1.5),
                     ),
                   )
                 else
@@ -2201,12 +2435,15 @@ class _MainShellState extends State<MainShell> {
                     runSpacing: 16,
                     children: _keepNotes.map((note) {
                       return Container(
-                        width: 320,
-                        padding: const EdgeInsets.all(16),
+                        width: isCompact ? double.infinity : 320,
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusLg,
+                          ),
                           border: Border.all(color: AppTheme.borderSubtle),
+                          boxShadow: AppTheme.shadowSm,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2214,17 +2451,23 @@ class _MainShellState extends State<MainShell> {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                PillBadge(
-                                  text: note.category,
-                                  backgroundColor: AppTheme.softEmerald,
-                                  textColor: AppTheme.deepEmerald,
-                                  icon: Icons.bookmark_rounded,
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: PillBadge(
+                                      text: note.category,
+                                      backgroundColor: AppTheme.softEmerald,
+                                      textColor: AppTheme.deepEmerald,
+                                      icon: Icons.bookmark_rounded,
+                                    ),
+                                  ),
                                 ),
-                                const Spacer(),
                                 Text(
                                   formatThaiTime(note.createdAt),
+                                  maxLines: 1,
                                   style: const TextStyle(
                                     fontSize: 11,
+                                    height: 1.35,
                                     color: AppTheme.slateMuted,
                                   ),
                                 ),
@@ -2246,20 +2489,22 @@ class _MainShellState extends State<MainShell> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             Text(
                               note.title,
                               style: const TextStyle(
                                 fontSize: 15,
+                                height: 1.35,
                                 fontWeight: FontWeight.w800,
                                 color: AppTheme.slateDark,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             SelectableText(
                               note.content,
                               style: const TextStyle(
                                 fontSize: 13,
+                                height: 1.5,
                                 color: AppTheme.slateBody,
                               ),
                             ),
@@ -2365,35 +2610,51 @@ class _MainShellState extends State<MainShell> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Overview Metric Cards
-                Wrap(
-                  spacing: 14,
-                  runSpacing: 14,
-                  children: [
-                    _buildMetricCard(
-                      'ผู้ใช้งานทั้งหมด (Gmail)',
-                      '${ov?.totalUsers ?? _adminUsers.length} บัญชี',
-                      Icons.people_alt_rounded,
-                      AppTheme.lineEmerald,
-                    ),
-                    _buildMetricCard(
-                      'ห้องสนทนาทั้งหมด',
-                      '${ov?.totalConversations ?? _conversations.length} ห้อง',
-                      Icons.forum_rounded,
-                      AppTheme.workBlue,
-                    ),
-                    _buildMetricCard(
-                      'ข้อความทั้งหมดบน MongoDB',
-                      '${ov?.totalMessages ?? 0} ข้อความ',
-                      Icons.mark_chat_read_rounded,
-                      AppTheme.personalPurple,
-                    ),
-                    _buildMetricCard(
-                      'ไฟล์ถาวรบน MinIO (bcapp-storage)',
-                      '${ov?.totalFiles ?? 0} ไฟล์ (${formatFileSize(ov?.totalStorageBytes ?? 0)})',
-                      Icons.cloud_done_rounded,
-                      AppTheme.warningAmber,
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, box) {
+                    // Phones get an even 2x2 grid; wider screens keep
+                    // fixed 255px tiles that fit four per row.
+                    final compact = box.maxWidth < 600;
+                    final tileWidth = compact ? (box.maxWidth - 12) / 2 : 255.0;
+                    return Wrap(
+                      spacing: compact ? 12 : 14,
+                      runSpacing: compact ? 12 : 14,
+                      children: [
+                        _buildMetricCard(
+                          'ผู้ใช้งานทั้งหมด (Gmail)',
+                          '${ov?.totalUsers ?? _adminUsers.length} บัญชี',
+                          Icons.people_alt_rounded,
+                          AppTheme.brandEmerald,
+                          width: tileWidth,
+                          compact: compact,
+                        ),
+                        _buildMetricCard(
+                          'ห้องสนทนาทั้งหมด',
+                          '${ov?.totalConversations ?? _conversations.length} ห้อง',
+                          Icons.forum_rounded,
+                          AppTheme.workBlue,
+                          width: tileWidth,
+                          compact: compact,
+                        ),
+                        _buildMetricCard(
+                          'ข้อความทั้งหมดบน MongoDB',
+                          '${ov?.totalMessages ?? 0} ข้อความ',
+                          Icons.mark_chat_read_rounded,
+                          AppTheme.personalPurple,
+                          width: tileWidth,
+                          compact: compact,
+                        ),
+                        _buildMetricCard(
+                          'ไฟล์ถาวรบน MinIO (bcapp-storage)',
+                          '${ov?.totalFiles ?? 0} ไฟล์ (${formatFileSize(ov?.totalStorageBytes ?? 0)})',
+                          Icons.cloud_done_rounded,
+                          AppTheme.warningAmber,
+                          width: tileWidth,
+                          compact: compact,
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
 
@@ -2407,11 +2668,12 @@ class _MainShellState extends State<MainShell> {
 
                 // Section 1: Mini-App Manager
                 Container(
-                  padding: EdgeInsets.all(isCompact ? 14 : 20),
+                  padding: EdgeInsets.all(isCompact ? 16 : 20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                     border: Border.all(color: AppTheme.borderSubtle),
+                    boxShadow: AppTheme.shadowSm,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2428,7 +2690,7 @@ class _MainShellState extends State<MainShell> {
                             children: [
                               Icon(
                                 Icons.dashboard_customize_rounded,
-                                color: AppTheme.lineEmerald,
+                                color: AppTheme.brandEmerald,
                               ),
                               SizedBox(width: 8),
                               Flexible(
@@ -2436,6 +2698,7 @@ class _MainShellState extends State<MainShell> {
                                   'จัดการระบบเสริม WebView (Dynamic Mini-App)',
                                   style: TextStyle(
                                     fontSize: 15.5,
+                                    height: 1.35,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
@@ -2514,7 +2777,7 @@ class _MainShellState extends State<MainShell> {
                               children: [
                                 Switch(
                                   value: app.enabled,
-                                  activeThumbColor: AppTheme.lineEmerald,
+                                  activeThumbColor: AppTheme.brandEmerald,
                                   onChanged: (val) async {
                                     await ApiService.instance
                                         .updateAdminMiniApp(app.id, {
@@ -2562,50 +2825,82 @@ class _MainShellState extends State<MainShell> {
     String label,
     String value,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    double width = 255,
+    bool compact = false,
+  }) {
+    final iconTile = Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Icon(icon, color: color, size: 22),
+    );
+    final labelText = Text(
+      label,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontSize: 12,
+        height: 1.4,
+        color: AppTheme.slateMuted,
+      ),
+    );
+    final valueText = Text(
+      value,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontSize: 15.5,
+        height: 1.35,
+        fontWeight: FontWeight.w800,
+        color: AppTheme.slateDark,
+      ),
+    );
+    if (compact) {
+      return Container(
+        width: width,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(color: AppTheme.borderSubtle),
+          boxShadow: AppTheme.shadowSm,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            iconTile,
+            const SizedBox(height: 12),
+            // Two label lines reserved so every tile in the grid is equal height.
+            SizedBox(height: 34, child: labelText),
+            const SizedBox(height: 4),
+            valueText,
+          ],
+        ),
+      );
+    }
     return Container(
-      width: 255,
-      padding: const EdgeInsets.all(18),
+      width: width,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         border: Border.all(color: AppTheme.borderSubtle),
+        boxShadow: AppTheme.shadowSm,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 22),
-          ),
+          iconTile,
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.slateMuted,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.slateDark,
-                  ),
-                ),
-              ],
+              children: [labelText, const SizedBox(height: 4), valueText],
             ),
           ),
         ],
@@ -2621,7 +2916,8 @@ class _MainShellState extends State<MainShell> {
       text: existing?.title ?? 'ระบบเช็คสต็อกสินค้าด่วน',
     );
     final subtitleCtrl = TextEditingController(
-      text: existing?.subtitle ?? 'ตรวจสอบยอดคงเหลือและส่งการ์ดสต็อกเข้าห้องแชท',
+      text:
+          existing?.subtitle ?? 'ตรวจสอบยอดคงเหลือและส่งการ์ดสต็อกเข้าห้องแชท',
     );
     final categoryCtrl = TextEditingController(
       text: existing?.category ?? 'คลังสินค้า/ขาย',
@@ -2629,9 +2925,7 @@ class _MainShellState extends State<MainShell> {
     final urlCtrl = TextEditingController(
       text: existing?.url ?? '/miniapp/stock_check',
     );
-    final colorCtrl = TextEditingController(
-      text: existing?.color ?? '#0EA5E9',
-    );
+    final colorCtrl = TextEditingController(text: existing?.color ?? '#0EA5E9');
 
     await showDialog<void>(
       context: context,
@@ -2663,9 +2957,7 @@ class _MainShellState extends State<MainShell> {
                 const SizedBox(height: 10),
                 TextField(
                   controller: subtitleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'คำอธิบายสั้นๆ',
-                  ),
+                  decoration: const InputDecoration(labelText: 'คำอธิบายสั้นๆ'),
                 ),
                 const SizedBox(height: 10),
                 TextField(
@@ -2742,14 +3034,14 @@ class _MainShellState extends State<MainShell> {
     return StatefulBuilder(
       builder: (ctx, setCardState) {
         return Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             border: Border.all(
-              color: AppTheme.personalPurple.withValues(alpha: 0.35),
-              width: 1.5,
+              color: AppTheme.personalPurple.withValues(alpha: 0.3),
             ),
+            boxShadow: AppTheme.shadowMd,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2786,6 +3078,7 @@ class _MainShellState extends State<MainShell> {
                               '🧠 ตั้งค่าสมองกล DeepSeek AI ประจำองค์กร',
                               style: TextStyle(
                                 fontSize: 15.5,
+                                height: 1.35,
                                 fontWeight: FontWeight.w800,
                                 color: AppTheme.slateDark,
                               ),
@@ -2920,14 +3213,12 @@ class _MainShellState extends State<MainShell> {
     return StatefulBuilder(
       builder: (ctx, setCardState) {
         return Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: AppTheme.workBlue.withValues(alpha: 0.35),
-              width: 1.5,
-            ),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            border: Border.all(color: AppTheme.workBlue.withValues(alpha: 0.3)),
+            boxShadow: AppTheme.shadowMd,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2957,6 +3248,7 @@ class _MainShellState extends State<MainShell> {
                           '🔄 โอนย้ายห้องแชทและประวัติลูกค้าเมื่อพนักงานลาออก (1-Click Handover + AI Briefing)',
                           style: TextStyle(
                             fontSize: 15.5,
+                            height: 1.35,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.slateDark,
                           ),
@@ -3073,9 +3365,7 @@ class _MainShellState extends State<MainShell> {
                               setCardState(() => isTransferring = false);
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('โอนย้ายไม่สำเร็จ: $e'),
-                                ),
+                                SnackBar(content: Text('โอนย้ายไม่สำเร็จ: $e')),
                               );
                             }
                           },
@@ -3091,7 +3381,10 @@ class _MainShellState extends State<MainShell> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.published_with_changes_rounded, size: 17),
+                        : const Icon(
+                            Icons.published_with_changes_rounded,
+                            size: 17,
+                          ),
                     label: const Text(
                       'โอนย้ายห้องแชท & สร้างสรุปงานด้วย AI ทันที',
                     ),
@@ -3136,8 +3429,9 @@ class _MainShellState extends State<MainShell> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         border: Border.all(color: AppTheme.borderSubtle),
+        boxShadow: AppTheme.shadowSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3150,7 +3444,11 @@ class _MainShellState extends State<MainShell> {
               Expanded(
                 child: Text(
                   'ส่งประกาศ Broadcast เข้าห้อง BC Official OA ถึงผู้ใช้ทุกคน',
-                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontSize: 15.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
@@ -3200,8 +3498,9 @@ class _MainShellState extends State<MainShell> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         border: Border.all(color: AppTheme.borderSubtle),
+        boxShadow: AppTheme.shadowSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3214,7 +3513,11 @@ class _MainShellState extends State<MainShell> {
               Expanded(
                 child: Text(
                   'รายชื่อผู้ใช้งานที่ซิงค์ด้วยบัญชี Gmail (User Management)',
-                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontSize: 15.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],

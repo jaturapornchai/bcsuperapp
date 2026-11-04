@@ -94,11 +94,11 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (ctx) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 440),
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -182,15 +182,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 10,
+                    runSpacing: 8,
                     children: [
                       OutlinedButton(
                         onPressed: () => Navigator.of(ctx).pop(),
                         child: const Text('ยกเลิก'),
                       ),
-                      const SizedBox(width: 10),
                       ElevatedButton.icon(
                         onPressed: () {
                           final email = emailCtrl.text.trim();
@@ -214,10 +215,24 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Fade + slide in once; delay staggers hero and card.
+  Widget _enter({required Widget child, int delayMs = 0}) {
+    final total = 400 + delayMs;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: total),
+      curve: Interval(delayMs / total, 1, curve: AppTheme.motionCurve),
+      builder: (context, t, c) => Opacity(
+        opacity: t,
+        child: Transform.translate(offset: Offset(0, (1 - t) * 14), child: c),
+      ),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isWide = size.width >= 900;
+    final isWide = MediaQuery.of(context).size.width >= 900;
 
     return Scaffold(
       body: Container(
@@ -225,87 +240,131 @@ class _LoginScreenState extends State<LoginScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF071318),
-              Color(0xFF0F172A),
-              Color(0xFF0A2E1F),
-            ],
+            colors: [Color(0xFF071318), Color(0xFF0F172A), Color(0xFF0A2E1F)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1120),
-                child: isWide
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(flex: 11, child: _buildHeroShowcase()),
-                          const SizedBox(width: 40),
-                          Expanded(flex: 10, child: _buildLoginCard()),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          _buildCompactHeroHeader(),
-                          const SizedBox(height: 24),
-                          _buildLoginCard(),
-                        ],
-                      ),
+        child: Stack(
+          children: [
+            // Soft radial emerald glow behind the hero.
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: isWide
+                          ? const Alignment(-0.6, -0.3)
+                          : const Alignment(0, -0.8),
+                      radius: 0.9,
+                      colors: [
+                        AppTheme.brandEmerald.withValues(alpha: 0.16),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isWide ? 32 : 16,
+                    vertical: isWide ? 32 : 20,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: isWide ? 1120 : 480),
+                    child: isWide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                flex: 11,
+                                child: _enter(child: _buildHeroShowcase()),
+                              ),
+                              const SizedBox(width: 48),
+                              Expanded(
+                                flex: 10,
+                                child: _enter(
+                                  delayMs: 120,
+                                  child: _buildLoginCard(wide: true),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              _enter(child: _buildCompactHeroHeader()),
+                              const SizedBox(height: 20),
+                              _enter(
+                                delayMs: 120,
+                                child: _buildLoginCard(wide: false),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _logoTile(double size, double fontSize) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: AppTheme.brandGradient,
+        borderRadius: BorderRadius.circular(size * 0.3),
+        boxShadow: AppTheme.glow(AppTheme.brandEmerald),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        'BC',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
   }
 
   Widget _buildCompactHeroHeader() {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: AppTheme.lineEmerald,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.lineEmerald.withValues(alpha: 0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
+        _logoTile(52, 21),
+        const SizedBox(width: 14),
+        const Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'BC Super App',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  height: 1.3,
+                ),
+              ),
+              Text(
+                'แชทใช้งานง่าย · ไฟล์ไม่หมดอายุ · ซิงค์ข้ามเครื่องด้วย Gmail',
+                style: TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 12.5,
+                  height: 1.4,
+                ),
               ),
             ],
           ),
-          child: const Center(
-            child: Text(
-              'BC',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'BC Super App',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'แชทคุ้นเคยเหมือน LINE 100% · ไฟล์ไม่หมดอายุ · ซิงค์ข้ามเครื่องด้วย Gmail',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
         ),
       ],
     );
@@ -330,7 +389,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       (
         Icons.dashboard_customize_rounded,
-        'Super App Mini-Apps (WebView + LINE Flex Card)',
+        'ระบบเสริม Mini-App (WebView + การ์ด Flex Card)',
         'เปิดระบบใบลา ใบเสนอราคา เบิกค่าใช้จ่าย ส่งเป็นการ์ดเข้าห้องแชท เพิ่มบริการใหม่จากหลังบ้านได้ทันที',
       ),
     ];
@@ -342,83 +401,68 @@ class _LoginScreenState extends State<LoginScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                color: AppTheme.lineEmerald,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.lineEmerald.withValues(alpha: 0.4),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
+            _logoTile(58, 23),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text(
+                        'BC Super App',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          height: 1.3,
+                        ),
+                      ),
+                      Container(
+                        height: 24,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.brandEmerald.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: AppTheme.brandEmerald.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        // widthFactor keeps the pill hugging its label
+                        // instead of stretching across the hero column.
+                        child: const Center(
+                          widthFactor: 1,
+                          child: Text(
+                            'Enterprise Chat + Cloud Vault',
+                            style: TextStyle(
+                              color: Color(0xFF4ADE80),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'แพลตฟอร์มสื่อสารและระบบเสริมองค์กรยุคใหม่ ใช้งานง่าย คุ้นมือตั้งแต่ครั้งแรก',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 13.5,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
-              child: const Center(
-                child: Text(
-                  'BC',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'BC Super App',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      height: 24,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.lineEmerald.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: AppTheme.lineEmerald.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'LINE Experience + Enterprise Cloud',
-                        style: TextStyle(
-                          color: Color(0xFF4ADE80),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'แพลตฟอร์มสื่อสารและระบบเสริมองค์กรยุคใหม่ ใช้งานง่ายเหมือน LINE 100%',
-                  style: TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 13.5,
-                  ),
-                ),
-              ],
             ),
           ],
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 32),
         ...features.map(
           (item) => Padding(
             padding: const EdgeInsets.only(bottom: 14),
@@ -426,10 +470,8 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.09),
-                ),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -438,8 +480,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppTheme.lineEmerald.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppTheme.brandEmerald.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     ),
                     child: Icon(
                       item.$1,
@@ -458,6 +500,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: Colors.white,
                             fontSize: 14.5,
                             fontWeight: FontWeight.w700,
+                            height: 1.35,
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -466,7 +509,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(
                             color: Color(0xFFCBD5E1),
                             fontSize: 12.5,
-                            height: 1.35,
+                            height: 1.4,
                           ),
                         ),
                       ],
@@ -481,19 +524,13 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginCard() {
+  Widget _buildLoginCard({required bool wide}) {
     return Container(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(wide ? 32 : 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 32,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: AppTheme.shadowLg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -503,15 +540,15 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: AppTheme.softEmerald,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
                 child: const Icon(
                   Icons.verified_user_rounded,
-                  color: AppTheme.lineEmerald,
+                  color: AppTheme.brandEmerald,
                   size: 22,
                 ),
               ),
@@ -526,6 +563,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontSize: 19,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.slateDark,
+                        height: 1.3,
                       ),
                     ),
                     Text(
@@ -533,6 +571,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                         fontSize: 12.5,
                         color: AppTheme.slateMuted,
+                        height: 1.4,
                       ),
                     ),
                   ],
@@ -547,7 +586,7 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 border: Border.all(color: const Color(0xFFFECACA)),
               ),
               child: Row(
@@ -566,6 +605,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontSize: 12.5,
                         color: AppTheme.dangerRed,
                         fontWeight: FontWeight.w500,
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -584,7 +624,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 backgroundColor: AppTheme.slateDark,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
               ),
               child: Row(
@@ -605,16 +645,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: Color(0xFFEA4335),
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        height: 1.0,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    'เข้าสู่ระบบด้วยบัญชี Gmail (Google Sign-In)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                  const Flexible(
+                    child: Text(
+                      'เข้าสู่ระบบด้วย Google (Gmail)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
@@ -626,21 +669,22 @@ class _LoginScreenState extends State<LoginScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Expanded(child: Divider()),
+              const Expanded(child: Divider(height: 1)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Text(
                   'หรือกรอก Gmail เข้าใช้งานทันที',
                   style: TextStyle(
                     fontSize: 12,
+                    height: 1.3,
                     color: AppTheme.slateMuted.withValues(alpha: 0.9),
                   ),
                 ),
               ),
-              const Expanded(child: Divider()),
+              const Expanded(child: Divider(height: 1)),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           TextField(
             controller: _emailController,
@@ -660,14 +704,14 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 44,
+            height: 46,
             child: ElevatedButton.icon(
               onPressed: _isLoading
                   ? null
                   : () => _performLogin(
-                        email: _emailController.text,
-                        displayName: _nameController.text,
-                      ),
+                      email: _emailController.text,
+                      displayName: _nameController.text,
+                    ),
               icon: _isLoading
                   ? const SizedBox(
                       width: 16,
@@ -686,22 +730,21 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           const Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(
-                Icons.bolt_rounded,
-                size: 18,
-                color: AppTheme.lineEmerald,
-              ),
+              Icon(Icons.bolt_rounded, size: 18, color: AppTheme.brandEmerald),
               SizedBox(width: 6),
-              Text(
-                'Quick Demo Login (คลิกเดียวสลับบัญชีทดสอบ)',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.slateDark,
+              Expanded(
+                child: Text(
+                  'Quick Demo Login (คลิกเดียวสลับบัญชีทดสอบ)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.slateDark,
+                    height: 1.3,
+                  ),
                 ),
               ),
             ],
@@ -712,95 +755,146 @@ class _LoginScreenState extends State<LoginScreen> {
             final email = acc['email']!;
             final name = acc['name']!;
             final role = acc['role']!;
-            final desc = acc['desc']!;
-            final isAdmin = role.contains('Admin');
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: _isLoading
-                    ? null
-                    : () {
-                        _emailController.text = email;
-                        _nameController.text = name;
-                        _performLogin(email: email, displayName: name);
-                      },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceBg,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppTheme.borderSubtle),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      UserAvatar(
-                        name: name,
-                        radius: 19,
-                        showOnline: true,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    name,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppTheme.slateDark,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                PillBadge(
-                                  text: role,
-                                  backgroundColor: isAdmin
-                                      ? AppTheme.softEmerald
-                                      : const Color(0xFFE0E7FF),
-                                  textColor: isAdmin
-                                      ? AppTheme.deepEmerald
-                                      : AppTheme.workBlue,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$email · $desc',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppTheme.slateMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppTheme.slateMuted,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            return _DemoAccountTile(
+              name: name,
+              role: role,
+              email: email,
+              desc: acc['desc']!,
+              onTap: _isLoading
+                  ? null
+                  : () {
+                      _emailController.text = email;
+                      _nameController.text = name;
+                      _performLogin(email: email, displayName: name);
+                    },
             );
           }),
         ],
+      ),
+    );
+  }
+}
+
+class _DemoAccountTile extends StatefulWidget {
+  final String name;
+  final String role;
+  final String email;
+  final String desc;
+  final VoidCallback? onTap;
+
+  const _DemoAccountTile({
+    required this.name,
+    required this.role,
+    required this.email,
+    required this.desc,
+    required this.onTap,
+  });
+
+  @override
+  State<_DemoAccountTile> createState() => _DemoAccountTileState();
+}
+
+class _DemoAccountTileState extends State<_DemoAccountTile> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = widget.role.contains('Admin');
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hover = true),
+        onExit: (_) => setState(() => _hover = false),
+        cursor: widget.onTap == null
+            ? SystemMouseCursors.basic
+            : SystemMouseCursors.click,
+        child: AnimatedContainer(
+          duration: AppTheme.motionFast,
+          curve: AppTheme.motionCurve,
+          decoration: BoxDecoration(
+            color: _hover ? AppTheme.softEmerald : AppTheme.surfaceBg,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            border: Border.all(
+              color: _hover
+                  ? AppTheme.brandEmerald.withValues(alpha: 0.5)
+                  : AppTheme.borderSubtle,
+            ),
+            boxShadow: _hover ? AppTheme.shadowSm : const [],
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              onTap: widget.onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    UserAvatar(name: widget.name, radius: 19, showOnline: true),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.slateDark,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              PillBadge(
+                                text: widget.role,
+                                backgroundColor: isAdmin
+                                    ? AppTheme.softEmerald
+                                    : const Color(0xFFE0E7FF),
+                                textColor: isAdmin
+                                    ? AppTheme.deepEmerald
+                                    : AppTheme.workBlue,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${widget.email} · ${widget.desc}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: AppTheme.slateMuted,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppTheme.slateMuted,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

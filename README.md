@@ -1,9 +1,9 @@
-# BC Super App — Enterprise LINE-Style Chat, DeepSeek AI Brain & Mini-App Ecosystem
+# BC Super App — Enterprise Chat, DeepSeek AI Brain & Mini-App Ecosystem
 
 ![BC Super App Banner](docs/screenshots/hero_banner.jpg)
 
 ## Objective
-ระบบ **Enterprise Super App** ครบวงจรที่ผสานประสบการณ์แชทแบบ **LINE** ที่คนไทยคุ้นเคยเข้ากับระบบความปลอดภัยระดับองค์กร, สมองกลผู้ช่วยอัจฉริยะ **DeepSeek AI** ประจำทุกคนและทุกกลุ่ม, คลังเก็บไฟล์ถาวรบน **MinIO** ที่ไม่มีวันหมดอายุ, และระบบบริการเสริม **Mini-App (WebView + JS Bridge)** ที่เพิ่มหรือแก้ไขฟีเจอร์จากหลังบ้านได้ทันทีโดยไม่ต้องอัปเดตแอป
+ระบบ **Enterprise Super App** ครบวงจรที่ผสานประสบการณ์แชทใช้งานง่ายแบบที่คนไทยคุ้นเคยเข้ากับระบบความปลอดภัยระดับองค์กร, สมองกลผู้ช่วยอัจฉริยะ **DeepSeek AI** ประจำทุกคนและทุกกลุ่ม, คลังเก็บไฟล์ถาวรบน **MinIO** ที่ไม่มีวันหมดอายุ, และระบบบริการเสริม **Mini-App (WebView + JS Bridge)** ที่เพิ่มหรือแก้ไขฟีเจอร์จากหลังบ้านได้ทันทีโดยไม่ต้องอัปเดตแอป
 
 รองรับการทำงานแบบ Cross-Platform โค้ดชุดเดียวครบทั้ง **5 แพลตฟอร์ม**: **Android, iOS, macOS, Windows, และ Web-based**
 
@@ -11,7 +11,7 @@
 
 ## ภาพหน้าจอมือถือจริง (Mobile Application Screenshots — Android & iOS)
 
-| 1. เข้าสู่ระบบด้วย Gmail (Mobile) | 2. รายการแชท & โฟลเดอร์งาน (Mobile) | 3. ห้องแชท LINE + รับงาน + AI (Mobile) |
+| 1. เข้าสู่ระบบด้วย Gmail (Mobile) | 2. รายการแชท & โฟลเดอร์งาน (Mobile) | 3. ห้องแชท + รับงาน + AI (Mobile) |
 | :---: | :---: | :---: |
 | ![Mobile Login](docs/screenshots/mobile_01_login.png) | ![Mobile Chats List](docs/screenshots/mobile_02_chats_list.png) | ![Mobile Chat Room](docs/screenshots/mobile_06_chat_room.png) |
 
@@ -26,8 +26,8 @@
 ### 1. หน้าเข้าสู่ระบบด้วยบัญชี Gmail & สลับบัญชีองค์กรด่วน
 ![1. หน้าเข้าสู่ระบบด้วยบัญชี Gmail](docs/screenshots/01_login_screen.png)
 
-### 2. ห้องแชทสไตล์ LINE PC Split-View + ปุ่มกดรับงาน + อนุมัติการ์ดในแชท + สมองกล DeepSeek AI
-![2. ห้องแชทสไตล์ LINE + DeepSeek AI + โหมดความลับ](docs/screenshots/02_chat_room_screen.png)
+### 2. ห้องแชทแบบ Split-View + ปุ่มกดรับงาน + อนุมัติการ์ดในแชท + สมองกล DeepSeek AI
+![2. ห้องแชท Split-View + DeepSeek AI + โหมดความลับ](docs/screenshots/02_chat_room_screen.png)
 
 ### 3. หน้าหลัก (โปรไฟล์องค์กร, ตั้งค่า BC ID, QR Code, รายชื่อเพื่อน & กลุ่ม)
 ![3. หน้าหลัก โปรไฟล์ และรายชื่อเพื่อน](docs/screenshots/03_home_friends_screen.png)
@@ -62,6 +62,12 @@
 6. **สถาปัตยกรรม Rust Backend ความเร็วสูง (High-Performance Architecture)**:
    - สร้าง **MongoDB Compound Indexes** อัตโนมัติสำหรับทุก Collection
    - ใช้ **Batch Query (`$in`)** ป้องกันปัญหา N+1 Query 100% ในการดึงห้องแชทและข้อมูลสมาชิก
+7. **หน้าจอพรีเมียมระบบเดียวทั้งแอป (Global Design System — `frontend/lib/theme/app_theme.dart`)**:
+   - รวมสี, มุมโค้ง (`radiusSm/Md/Lg/Xl`), เงาซ้อนสองชั้น (`shadowSm/Md/Lg`), Gradient และจังหวะแอนิเมชัน (`motionFast/Med`) ไว้ที่เดียว ทุกหน้าจอเรียกใช้ค่าเดียวกัน
+   - แผงกระจกฝ้า `GlassPanel` (ช่องพิมพ์ข้อความ, แบนเนอร์ปักหมุด), แอนิเมชันจางเลื่อนตอนสลับแท็บและเปิดห้องแชท, ข้อความใหม่ค่อยๆ ปรากฏ
+   - ฟอนต์ Prompt ตั้งระยะบรรทัดเผื่อสระ-วรรณยุกต์ไทยไม่ชนกัน, อวาตาร์ตัวย่อชื่อไทยวาดในแอปเอง (ข้ามสระนำ/วรรณยุกต์)
+   - Baseline-First: ไอคอน ตัวหนังสือ Badge ในแถวเดียวกันอยู่กึ่งกลางระนาบเดียวกัน, ข้อความยาวตัดด้วย `…` ไม่เกิด RenderFlex overflow ทั้งมือถือ 412x915 และเดสก์ท็อป 1440x900
+   - มือถือ: แถบเมนูล่าง, หัวห้องแชทย่อปุ่มเป็นไอคอน + เมนู ⋮, การ์ดเต็มความกว้าง; เดสก์ท็อป: แถบเมนูข้างไล่สีกรมท่า + Split-View รายการแชท/ห้องแชท
 
 ---
 
@@ -69,7 +75,7 @@
 ```mermaid
 flowchart LR
     subgraph Client["Flutter Super App (Android / iOS / macOS / Windows / Web)"]
-        UI["LINE-Style Chat & Confidential UI"]
+        UI["Enterprise Chat & Confidential UI"]
         WV["Mini-App WebView + SSO Bridge"]
         ADM["Admin Backoffice & AI Control"]
     end
@@ -138,11 +144,20 @@ flutter run -d chrome --web-port 3095
 # หรือรันบน Windows Desktop:
 # flutter run -d windows
 
-# 4. รันการทดสอบอัตโนมัติครบวงจร (Integration Test + E2E 12 ขั้นตอน)
+# 4. รันการทดสอบอัตโนมัติครบวงจร (Integration Test + E2E 15 ขั้นตอน)
 cd d:\bcapp\backend
 cargo test
 cd d:\bcapp
 node e2e_test.mjs
+
+# 5. Build release แต่ละแพลตฟอร์ม
+cd d:\bcapp\frontend
+flutter analyze; flutter test
+flutter build web --release       # -> build\web
+flutter build windows --release   # -> build\windows\x64\runner\Release\frontend.exe
+flutter build apk --release       # -> build\app\outputs\flutter-apk\app-release.apk
+# iOS / macOS ต้อง build บนเครื่อง macOS ที่มี Xcode:
+# flutter build ios --release ; flutter build macos --release
 ```
 
 ---

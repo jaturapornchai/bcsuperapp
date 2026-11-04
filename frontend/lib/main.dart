@@ -57,7 +57,7 @@ class _BCAppState extends State<BCApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BC Super App — LINE Enterprise & Cloud Vault',
+      title: 'BC Super App — Enterprise Chat & Cloud Vault',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.buildTheme(),
       home: _checkingSession
@@ -80,36 +80,63 @@ class _SplashLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.slateDark,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                color: AppTheme.lineEmerald,
-                borderRadius: BorderRadius.circular(20),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: AppTheme.navyGradient),
+        child: Center(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: AppTheme.motionMed,
+            curve: AppTheme.motionCurve,
+            builder: (context, t, child) => Opacity(
+              opacity: t,
+              child: Transform.translate(
+                offset: Offset(0, 12 * (1 - t)),
+                child: child,
               ),
-              alignment: Alignment.center,
-              child: const Text(
-                'BC',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.brandGradient,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    boxShadow: AppTheme.glow(AppTheme.brandEmerald),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'BC',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 24),
+                const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.6,
+                    color: AppTheme.brandEmerald,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'กำลังซิงค์ข้อมูลแชทองค์กรและคลังไฟล์ถาวร...',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13.5,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            const CircularProgressIndicator(color: AppTheme.lineEmerald),
-            const SizedBox(height: 12),
-            const Text(
-              'กำลังซิงค์ข้อมูลแชทองค์กรและคลังไฟล์ถาวร...',
-              style: TextStyle(color: Colors.white70, fontSize: 13.5),
-            ),
-          ],
+          ),
         ),
       ),
     );

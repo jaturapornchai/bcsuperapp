@@ -66,9 +66,7 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
       _label2 = 'รายการเสนอราคา';
       _label3 = 'ยอดรวมสุทธิ (รวม VAT)';
       _statusBadge = 'ใบเสนอราคาด่วน';
-      _field1Ctrl = TextEditingController(
-        text: 'บจก. สยามโมเดิร์น เทรดดิ้ง',
-      );
+      _field1Ctrl = TextEditingController(text: 'บจก. สยามโมเดิร์น เทรดดิ้ง');
       _field2Ctrl = TextEditingController(
         text: 'ชุดซอฟต์แวร์ BC Account + Cloud 1 ปี',
       );
@@ -94,10 +92,10 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
       _label2 = 'วันและเวลานัดหมาย';
       _label3 = 'สถานที่ / ห้องประชุม';
       _statusBadge = 'ยืนยันนัดหมาย';
-      _field1Ctrl = TextEditingController(
-        text: 'ประชุมวางแผนยอดขายไตรมาส 4',
+      _field1Ctrl = TextEditingController(text: 'ประชุมวางแผนยอดขายไตรมาส 4');
+      _field2Ctrl = TextEditingController(
+        text: 'พรุ่งนี้ เวลา 14:00 - 15:30 น.',
       );
-      _field2Ctrl = TextEditingController(text: 'พรุ่งนี้ เวลา 14:00 - 15:30 น.');
       _field3Ctrl = TextEditingController(
         text: 'ห้องประชุมใหญ่ ชั้น 3 / BC Meet',
       );
@@ -207,45 +205,63 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
   Widget build(BuildContext context) {
     final accentColor = AppTheme.parseHexColor(widget.miniApp.color);
     final user = ApiService.instance.currentUser;
+    final narrow = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceBg,
       appBar: AppBar(
-        backgroundColor: AppTheme.slateDark,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        // A childless DecoratedBox collapses to 0x0 here; expand it so the
+        // gradient actually fills the bar behind the white title.
+        flexibleSpace: const SizedBox.expand(
+          child: DecoratedBox(
+            decoration: BoxDecoration(gradient: AppTheme.navyGradient),
+          ),
+        ),
         title: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 34,
-              height: 34,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: accentColor,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                boxShadow: AppTheme.glow(accentColor, strength: 0.28),
               ),
               child: Icon(
                 AppTheme.resolveMiniAppIcon(widget.miniApp.icon),
                 color: Colors.white,
-                size: 19,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     widget.miniApp.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
+                      height: 1.3,
                     ),
                   ),
                   Text(
                     'Mini-App WebView Bridge · หมวด ${widget.miniApp.category}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 11.5,
                       color: Color(0xFF94A3B8),
+                      height: 1.3,
                     ),
                   ),
                 ],
@@ -254,34 +270,19 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
           ],
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Center(
-              child: OutlinedButton.icon(
-                onPressed: _openExternalWebView,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.28),
-                  ),
-                  minimumSize: const Size(0, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-                icon: const Icon(Icons.open_in_new_rounded, size: 15),
-                label: const Text(
-                  'เปิด WebView เต็มจอ',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
-            ),
+          IconButton(
+            tooltip: 'เปิด WebView เต็มจอ',
+            onPressed: _openExternalWebView,
+            icon: const Icon(Icons.open_in_new_rounded, size: 20),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(narrow ? 14 : 24),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 880),
+            constraints: const BoxConstraints(maxWidth: 920),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -293,9 +294,9 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: AppTheme.softEmerald,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     border: Border.all(
-                      color: AppTheme.lineEmerald.withValues(alpha: 0.35),
+                      color: AppTheme.brandEmerald.withValues(alpha: 0.35),
                     ),
                   ),
                   child: Row(
@@ -314,10 +315,12 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.deepEmerald,
+                            height: 1.4,
                           ),
                         ),
                       ),
-                      PillBadge(
+                      const SizedBox(width: 8),
+                      const PillBadge(
                         text: 'JS Bridge Active',
                         backgroundColor: Colors.white,
                         textColor: AppTheme.deepEmerald,
@@ -361,13 +364,221 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
     );
   }
 
+  Widget _fieldLabel(String text, {bool strong = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: strong ? FontWeight.w700 : FontWeight.w600,
+          color: strong ? AppTheme.slateDark : AppTheme.slateBody,
+          height: 1.4,
+        ),
+      ),
+    );
+  }
+
+  Widget _folderBadge(Conversation conv) {
+    return PillBadge(
+      text: conv.folderLabel,
+      backgroundColor: AppTheme.softEmerald,
+      textColor: AppTheme.deepEmerald,
+    );
+  }
+
+  Widget _roomAvatar(Conversation conv, double radius) {
+    return UserAvatar(
+      name: conv.name,
+      avatarUrl: conv.avatarUrl.isEmpty ? null : conv.avatarUrl,
+      radius: radius,
+      isGroup: conv.kind == 'group',
+    );
+  }
+
+  Future<void> _pickConversation() async {
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      constraints: const BoxConstraints(maxWidth: 560),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXl),
+        ),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 10),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppTheme.borderSubtle,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 14, 20, 10),
+                  child: Text(
+                    'เลือกห้องแชทปลายทาง',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.slateDark,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    itemCount: widget.conversations.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 6),
+                    itemBuilder: (_, i) {
+                      final conv = widget.conversations[i];
+                      final selected = conv.id == _selectedConversationId;
+                      return Material(
+                        color: selected
+                            ? AppTheme.softEmerald
+                            : AppTheme.surfaceBg,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusMd,
+                          ),
+                          onTap: () => Navigator.of(ctx).pop(conv.id),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                _roomAvatar(conv, 19),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    conv.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.slateDark,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _folderBadge(conv),
+                                if (selected) ...[
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 18,
+                                    color: AppTheme.brandEmerald,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedConversationId = picked);
+    }
+  }
+
+  Widget _buildRoomPicker() {
+    Conversation? selected;
+    for (final c in widget.conversations) {
+      if (c.id == _selectedConversationId) selected = c;
+    }
+    return Material(
+      color: AppTheme.surfaceBg,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        onTap: _pickConversation,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 52),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            border: Border.all(color: AppTheme.borderSubtle),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (selected != null)
+                _roomAvatar(selected, 16)
+              else
+                const Icon(
+                  Icons.forum_outlined,
+                  size: 20,
+                  color: AppTheme.slateMuted,
+                ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  selected?.name ?? 'แตะเพื่อเลือกห้องแชท',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.slateDark,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+              if (selected != null) ...[
+                const SizedBox(width: 8),
+                _folderBadge(selected),
+              ],
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.expand_more_rounded,
+                size: 20,
+                color: AppTheme.slateMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFormCard(Color accentColor) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         border: Border.all(color: AppTheme.borderSubtle),
+        boxShadow: AppTheme.shadowSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,6 +595,7 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.slateDark,
+                    height: 1.3,
                   ),
                 ),
               ),
@@ -391,60 +603,19 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
           ),
           const SizedBox(height: 16),
 
-          Text(
-            _label1,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.slateBody,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _field1Ctrl,
-            onChanged: (_) => setState(() {}),
-          ),
+          _fieldLabel(_label1),
+          TextField(controller: _field1Ctrl, onChanged: (_) => setState(() {})),
           const SizedBox(height: 14),
 
-          Text(
-            _label2,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.slateBody,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _field2Ctrl,
-            onChanged: (_) => setState(() {}),
-          ),
+          _fieldLabel(_label2),
+          TextField(controller: _field2Ctrl, onChanged: (_) => setState(() {})),
           const SizedBox(height: 14),
 
-          Text(
-            _label3,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.slateBody,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _field3Ctrl,
-            onChanged: (_) => setState(() {}),
-          ),
+          _fieldLabel(_label3),
+          TextField(controller: _field3Ctrl, onChanged: (_) => setState(() {})),
           const SizedBox(height: 14),
 
-          const Text(
-            'หมายเหตุเพิ่มเติม',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.slateBody,
-            ),
-          ),
-          const SizedBox(height: 6),
+          _fieldLabel('หมายเหตุเพิ่มเติม'),
           TextField(
             controller: _noteCtrl,
             maxLines: 2,
@@ -452,43 +623,23 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
           ),
           const SizedBox(height: 18),
 
-          const Text(
-            'เลือกห้องแชทปลายทางที่ต้องการส่งการ์ด (LINE Flex Message)',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.slateDark,
-            ),
-          ),
-          const SizedBox(height: 6),
+          _fieldLabel('เลือกห้องแชทปลายทางที่ต้องการส่งการ์ด', strong: true),
           if (widget.conversations.isEmpty)
             const Text(
               'ยังไม่มีห้องแชท กรุณาเปิดห้องแชทก่อน',
-              style: TextStyle(fontSize: 13, color: AppTheme.dangerRed),
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.dangerRed,
+                height: 1.4,
+              ),
             )
           else
-            DropdownButtonFormField<String>(
-              initialValue: _selectedConversationId,
-              items: widget.conversations.map((conv) {
-                return DropdownMenuItem<String>(
-                  value: conv.id,
-                  child: Text(
-                    '${conv.name} (${conv.folderLabel})',
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13.5),
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) => setState(() => _selectedConversationId = val),
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.forum_outlined, size: 18),
-              ),
-            ),
+            _buildRoomPicker(),
 
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
-            height: 46,
+            height: 48,
             child: ElevatedButton.icon(
               onPressed: _isSending ? null : _sendFlexCardToChat,
               style: ElevatedButton.styleFrom(backgroundColor: accentColor),
@@ -503,7 +654,9 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                     )
                   : const Icon(Icons.send_rounded, size: 18),
               label: const Text(
-                'ส่งการ์ดเข้าห้องแชท (LINE Flex Card)',
+                'ส่งการ์ดเข้าห้องแชท (Flex Card)',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
@@ -518,45 +671,46 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF8CABD9),
-        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.visibility_rounded,
-                color: Colors.white,
+                color: AppTheme.slateBody,
                 size: 16,
               ),
-              const SizedBox(width: 6),
-              const Text(
-                'ตัวอย่างการ์ดที่จะแสดงในห้องแชท (Flex Message)',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+              SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'ตัวอย่างการ์ดที่จะแสดงในห้องแชท (Flex Card)',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.slateBody,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
 
-          // Simulated LINE Flex Card Bubble
+          // Simulated Flex Card bubble
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.14),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              boxShadow: AppTheme.shadowMd,
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -580,28 +734,37 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                       Expanded(
                         child: Text(
                           widget.miniApp.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
+                            height: 1.3,
                           ),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          _statusBadge,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            _statusBadge,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
                           ),
                         ),
                       ),
@@ -619,6 +782,7 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.slateDark,
+                          height: 1.35,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -627,6 +791,7 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                         style: const TextStyle(
                           fontSize: 12.5,
                           color: AppTheme.slateBody,
+                          height: 1.4,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -637,17 +802,22 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: AppTheme.surfaceBg,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusSm,
+                          ),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              _label3,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppTheme.slateMuted,
+                            Flexible(
+                              child: Text(
+                                _label3,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppTheme.slateMuted,
+                                  height: 1.4,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -661,6 +831,7 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: accentColor,
+                                  height: 1.35,
                                 ),
                               ),
                             ),
@@ -674,10 +845,11 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                           style: const TextStyle(
                             fontSize: 11.5,
                             color: AppTheme.slateMuted,
+                            height: 1.4,
                           ),
                         ),
                       ],
-                      const Divider(height: 20),
+                      const Divider(height: 22),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -690,18 +862,32 @@ class _MiniAppRunnerScreenState extends State<MiniAppRunnerScreen> {
                           Expanded(
                             child: Text(
                               'ผู้ส่ง: ${user?.displayName ?? "คุณ"}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: 11.5,
                                 color: AppTheme.slateMuted,
+                                height: 1.3,
                               ),
                             ),
                           ),
-                          Text(
-                            'เปิดดูรายละเอียด >',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: accentColor,
+                          const SizedBox(width: 8),
+                          Container(
+                            height: 30,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'เปิดดูรายละเอียด',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: accentColor,
+                                height: 1.3,
+                              ),
                             ),
                           ),
                         ],

@@ -10,3 +10,6 @@ frontend/build/
 frontend/.flutter-plugins
 frontend/.flutter-plugins-dependencies
 .DS_Store
+
+# Playwright MCP console/session logs
+.playwright-mcp/

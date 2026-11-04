@@ -1,10 +1,12 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 enum ChatRoomThemeMode {
-  classicSky('classic_sky', 'LINE Classic Sky', Color(0xFF8CABD9), false),
-  darkSlate('dark_slate', 'Executive Dark Slate', Color(0xFF0F172A), true),
-  pearlMist('pearl_mist', 'Pearl Mist', Color(0xFFF1F5F9), false);
+  classicSky('classic_sky', 'ฟ้าคลาสสิก', Color(0xFF8CABD9), false),
+  darkSlate('dark_slate', 'สเลทเข้มผู้บริหาร', Color(0xFF0F172A), true),
+  pearlMist('pearl_mist', 'มุกขาวนวล', Color(0xFFF1F5F9), false);
 
   final String code;
   final String label;
@@ -27,8 +29,8 @@ enum ChatRoomThemeMode {
 }
 
 class AppTheme {
-  // Primary LINE Emerald & Executive Slate Palette
-  static const Color lineEmerald = Color(0xFF06C755);
+  // Brand Emerald & Executive Slate palette
+  static const Color brandEmerald = Color(0xFF06C755);
   static const Color deepEmerald = Color(0xFF00A040);
   static const Color softEmerald = Color(0xFFE8FBF0);
   static const Color sentBubble = Color(0xFFA8F5B8);
@@ -42,48 +44,189 @@ class AppTheme {
   static const Color cardBg = Color(0xFFFFFFFF);
   static const Color borderSubtle = Color(0xFFE2E8F0);
 
-  // Category & Accent Colors
+  // Category & accent colors
   static const Color workBlue = Color(0xFF2563EB);
   static const Color personalPurple = Color(0xFF7C3AED);
+  static const Color aiViolet = Color(0xFF6D28D9);
   static const Color warningAmber = Color(0xFFD97706);
   static const Color dangerRed = Color(0xFFDC2626);
   static const Color goldPin = Color(0xFFF59E0B);
 
+  // Radius scale
+  static const double radiusSm = 10;
+  static const double radiusMd = 14;
+  static const double radiusLg = 20;
+  static const double radiusXl = 28;
+
+  // Soft layered shadows: a tight contact shadow + a wide ambient one,
+  // tinted with slate instead of pure black so cards look lifted, not dirty.
+  static const List<BoxShadow> shadowSm = [
+    BoxShadow(color: Color(0x0D0F172A), blurRadius: 2, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x0A0F172A), blurRadius: 10, offset: Offset(0, 4)),
+  ];
+  static const List<BoxShadow> shadowMd = [
+    BoxShadow(color: Color(0x0F0F172A), blurRadius: 3, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x120F172A), blurRadius: 24, offset: Offset(0, 10)),
+  ];
+  static const List<BoxShadow> shadowLg = [
+    BoxShadow(color: Color(0x140F172A), blurRadius: 6, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x1F0F172A), blurRadius: 48, offset: Offset(0, 24)),
+  ];
+
+  static List<BoxShadow> glow(Color color, {double strength = 0.32}) => [
+    BoxShadow(
+      color: color.withValues(alpha: strength),
+      blurRadius: 18,
+      offset: const Offset(0, 6),
+    ),
+  ];
+
+  // Gradients
+  static const LinearGradient brandGradient = LinearGradient(
+    colors: [Color(0xFF12D46B), Color(0xFF02A346)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const LinearGradient aiGradient = LinearGradient(
+    colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const LinearGradient navyGradient = LinearGradient(
+    colors: [Color(0xFF0B1222), Color(0xFF15203A)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  // Motion
+  static const Duration motionFast = Duration(milliseconds: 160);
+  static const Duration motionMed = Duration(milliseconds: 280);
+  static const Curve motionCurve = Curves.easeOutCubic;
+
+  /// Fade + small upward slide. Use as `AnimatedSwitcher.transitionBuilder`
+  /// for tab bodies / embedded chat rooms so every switch feels the same.
+  static Widget fadeSlideTransition(Widget child, Animation<double> animation) {
+    final curved = CurvedAnimation(parent: animation, curve: motionCurve);
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.015),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
+  }
+
   static ThemeData buildTheme() {
-    final baseText = GoogleFonts.promptTextTheme();
+    // Thai glyphs carry marks above and below the line; a 1.0 height clips
+    // them, so body copy gets ~1.45 and headings ~1.3.
+    final base = GoogleFonts.promptTextTheme();
+    final textTheme = base
+        .copyWith(
+          displaySmall: base.displaySmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            height: 1.25,
+            letterSpacing: -0.4,
+          ),
+          headlineSmall: base.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            height: 1.3,
+            letterSpacing: -0.2,
+          ),
+          titleLarge: base.titleLarge?.copyWith(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            height: 1.3,
+            letterSpacing: -0.1,
+          ),
+          titleMedium: base.titleMedium?.copyWith(
+            fontSize: 15.5,
+            fontWeight: FontWeight.w600,
+            height: 1.35,
+          ),
+          titleSmall: base.titleSmall?.copyWith(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+            height: 1.35,
+          ),
+          bodyLarge: base.bodyLarge?.copyWith(fontSize: 15, height: 1.5),
+          bodyMedium: base.bodyMedium?.copyWith(fontSize: 14, height: 1.45),
+          bodySmall: base.bodySmall?.copyWith(
+            fontSize: 12.5,
+            height: 1.4,
+            color: slateMuted,
+          ),
+          labelLarge: base.labelLarge?.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+          labelMedium: base.labelMedium?.copyWith(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            height: 1.2,
+          ),
+          labelSmall: base.labelSmall?.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            height: 1.2,
+          ),
+        )
+        .apply(bodyColor: slateDark, displayColor: slateDark);
+
+    const transitionsTheme = PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      },
+    );
+
+    final roundedMd = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(radiusMd),
+    );
 
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: surfaceBg,
+      splashFactory: InkRipple.splashFactory,
+      pageTransitionsTheme: transitionsTheme,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: lineEmerald,
-        primary: lineEmerald,
+        seedColor: brandEmerald,
+        primary: brandEmerald,
         secondary: deepEmerald,
         surface: cardBg,
         onPrimary: Colors.white,
         onSurface: slateDark,
+        surfaceTint: Colors.transparent,
       ),
-      textTheme: baseText.apply(
-        bodyColor: slateDark,
-        displayColor: slateDark,
-      ),
+      textTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: slateDark,
         foregroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         titleTextStyle: GoogleFonts.prompt(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white,
+          height: 1.3,
         ),
       ),
       cardTheme: CardThemeData(
         color: cardBg,
         elevation: 0,
         margin: EdgeInsets.zero,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(radiusLg),
           side: const BorderSide(color: borderSubtle, width: 1),
         ),
       ),
@@ -93,55 +236,247 @@ class AppTheme {
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
-          vertical: 12,
+          vertical: 13,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(radiusMd),
           borderSide: const BorderSide(color: borderSubtle),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(radiusMd),
           borderSide: const BorderSide(color: borderSubtle),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: lineEmerald, width: 1.6),
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: brandEmerald, width: 1.6),
         ),
         hintStyle: GoogleFonts.prompt(
           fontSize: 13.5,
           color: slateMuted,
+          height: 1.3,
+        ),
+        labelStyle: GoogleFonts.prompt(
+          fontSize: 13.5,
+          color: slateMuted,
+          height: 1.3,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: lineEmerald,
+          backgroundColor: brandEmerald,
           foregroundColor: Colors.white,
           elevation: 0,
-          minimumSize: const Size(0, 42),
+          shadowColor: Colors.transparent,
+          minimumSize: const Size(0, 44),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: roundedMd,
           textStyle: GoogleFonts.prompt(
             fontSize: 14,
             fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          shape: roundedMd,
+          textStyle: GoogleFonts.prompt(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: slateDark,
-          minimumSize: const Size(0, 42),
+          minimumSize: const Size(0, 44),
           side: const BorderSide(color: borderSubtle),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: roundedMd,
           textStyle: GoogleFonts.prompt(
             fontSize: 13.5,
             fontWeight: FontWeight.w500,
+            height: 1.2,
           ),
         ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: deepEmerald,
+          shape: roundedMd,
+          textStyle: GoogleFonts.prompt(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(shape: roundedMd),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: Colors.white,
+        // Light selected fill so a chip label stays readable even when the
+        // call site does not set its own selected text color.
+        selectedColor: softEmerald,
+        checkmarkColor: deepEmerald,
+        side: const BorderSide(color: borderSubtle),
+        shape: const StadiumBorder(),
+        labelStyle: WidgetStateTextStyle.resolveWith(
+          (states) => GoogleFonts.prompt(
+            fontSize: 13,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w600
+                : FontWeight.w500,
+            height: 1.2,
+            color: states.contains(WidgetState.selected)
+                ? deepEmerald
+                : slateBody,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 66,
+        elevation: 0,
+        backgroundColor: Colors.white.withValues(alpha: 0.86),
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: softEmerald,
+        indicatorShape: const StadiumBorder(),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            size: 23,
+            color: states.contains(WidgetState.selected)
+                ? deepEmerald
+                : slateMuted,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => GoogleFonts.prompt(
+            fontSize: 11.5,
+            height: 1.2,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w600
+                : FontWeight.w500,
+            color: states.contains(WidgetState.selected)
+                ? deepEmerald
+                : slateMuted,
+          ),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusXl),
+        ),
+        titleTextStyle: GoogleFonts.prompt(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: slateDark,
+          height: 1.3,
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        showDragHandle: true,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(radiusXl)),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        shadowColor: const Color(0x330F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          side: const BorderSide(color: borderSubtle),
+        ),
+        textStyle: GoogleFonts.prompt(
+          fontSize: 13.5,
+          color: slateDark,
+          height: 1.3,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: slateDark,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+        ),
+        contentTextStyle: GoogleFonts.prompt(
+          fontSize: 13.5,
+          color: Colors.white,
+          height: 1.35,
+        ),
+      ),
+      tooltipTheme: TooltipThemeData(
+        waitDuration: const Duration(milliseconds: 400),
+        decoration: BoxDecoration(
+          color: slateDark.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: GoogleFonts.prompt(
+          fontSize: 12,
+          color: Colors.white,
+          height: 1.3,
+        ),
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: slateDark,
+        unselectedLabelColor: slateMuted,
+        indicatorColor: brandEmerald,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: borderSubtle,
+        labelStyle: GoogleFonts.prompt(
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+          height: 1.2,
+        ),
+        unselectedLabelStyle: GoogleFonts.prompt(
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+          height: 1.2,
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? Colors.white : null,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? brandEmerald : null,
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        shape: roundedMd,
+        iconColor: slateMuted,
+        titleTextStyle: GoogleFonts.prompt(
+          fontSize: 14.5,
+          fontWeight: FontWeight.w600,
+          color: slateDark,
+          height: 1.35,
+        ),
+        subtitleTextStyle: GoogleFonts.prompt(
+          fontSize: 12.5,
+          color: slateMuted,
+          height: 1.4,
+        ),
+      ),
+      scrollbarTheme: ScrollbarThemeData(
+        thickness: WidgetStateProperty.all(6),
+        radius: const Radius.circular(999),
+        thumbColor: WidgetStateProperty.all(slateMuted.withValues(alpha: 0.35)),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: brandEmerald,
       ),
       dividerTheme: const DividerThemeData(
         color: borderSubtle,
@@ -151,7 +486,7 @@ class AppTheme {
     );
   }
 
-  static Color parseHexColor(String? hex, {Color fallback = lineEmerald}) {
+  static Color parseHexColor(String? hex, {Color fallback = brandEmerald}) {
     if (hex == null || hex.trim().isEmpty) return fallback;
     final clean = hex.replaceAll('#', '').trim();
     if (clean.length == 6) {
@@ -191,6 +526,49 @@ class AppTheme {
   }
 }
 
+/// Frosted-glass surface (blur + translucent tint + hairline border).
+/// Wrap headers, bottom bars and floating toolbars that sit over content.
+class GlassPanel extends StatelessWidget {
+  final Widget child;
+  final double blur;
+  final Color tint;
+  final BorderRadius borderRadius;
+  final EdgeInsetsGeometry? padding;
+  final Border? border;
+
+  const GlassPanel({
+    super.key,
+    required this.child,
+    this.blur = 18,
+    this.tint = const Color(0xD9FFFFFF),
+    this.borderRadius = BorderRadius.zero,
+    this.padding,
+    this.border,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: tint,
+            borderRadius: borderRadius,
+            border:
+                border ??
+                Border.all(color: Colors.white.withValues(alpha: 0.55)),
+          ),
+          child: padding == null
+              ? child
+              : Padding(padding: padding!, child: child),
+        ),
+      ),
+    );
+  }
+}
+
 /// Global Shared Avatar with online ring & fallback initials
 class UserAvatar extends StatelessWidget {
   final String name;
@@ -210,31 +588,20 @@ class UserAvatar extends StatelessWidget {
     this.isGroup = false,
   });
 
-  String get _initials {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) return 'BC';
-    final parts = trimmed.split(RegExp(r'\s+'));
-    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
-      return '${parts[0].characters.first}${parts[1].characters.first}'
-          .toUpperCase();
-    }
-    return trimmed.characters.take(2).toString().toUpperCase();
-  }
-
   List<Color> _gradientColors() {
     if (isOfficial) {
-      return const [Color(0xFF06C755), Color(0xFF008F39)];
+      return const [Color(0xFF12D46B), Color(0xFF008F39)];
     }
     if (isGroup) {
-      return const [Color(0xFF2563EB), Color(0xFF1D4ED8)];
+      return const [Color(0xFF3B82F6), Color(0xFF1D4ED8)];
     }
     final hash = name.codeUnits.fold<int>(0, (a, b) => a + b);
     const palettes = [
-      [Color(0xFF0EA5E9), Color(0xFF2563EB)],
-      [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-      [Color(0xFFEC4899), Color(0xFFBE185D)],
-      [Color(0xFF10B981), Color(0xFF047857)],
-      [Color(0xFFF59E0B), Color(0xFFD97706)],
+      [Color(0xFF38BDF8), Color(0xFF2563EB)],
+      [Color(0xFFA78BFA), Color(0xFF6D28D9)],
+      [Color(0xFFF472B6), Color(0xFFBE185D)],
+      [Color(0xFF34D399), Color(0xFF047857)],
+      [Color(0xFFFBBF24), Color(0xFFD97706)],
     ];
     return palettes[hash % palettes.length];
   }
@@ -242,10 +609,13 @@ class UserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = _gradientColors();
+    // ui-avatars.com images are only initials and render Thai marks as
+    // broken boxes, so draw those initials locally instead of fetching them.
     final hasImage =
         avatarUrl != null &&
         avatarUrl!.trim().isNotEmpty &&
-        avatarUrl!.startsWith('http');
+        avatarUrl!.startsWith('http') &&
+        !avatarUrl!.contains('ui-avatars.com');
 
     return SizedBox(
       width: radius * 2 + 4,
@@ -265,9 +635,9 @@ class UserAvatar extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: colors.first.withValues(alpha: 0.22),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  color: colors.last.withValues(alpha: 0.24),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
@@ -286,10 +656,10 @@ class UserAvatar extends StatelessWidget {
               right: 1,
               bottom: 1,
               child: Container(
-                width: radius * 0.52,
-                height: radius * 0.52,
+                width: radius * 0.5,
+                height: radius * 0.5,
                 decoration: BoxDecoration(
-                  color: AppTheme.lineEmerald,
+                  color: AppTheme.brandEmerald,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
@@ -302,7 +672,7 @@ class UserAvatar extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: AppTheme.lineEmerald,
+                  color: AppTheme.brandEmerald,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),
@@ -330,16 +700,51 @@ class UserAvatar extends StatelessWidget {
     }
     return Center(
       child: Text(
-        _initials,
+        avatarInitials(name),
+        maxLines: 1,
         style: TextStyle(
           color: Colors.white,
-          fontSize: radius * 0.72,
-          fontWeight: FontWeight.w700,
-          height: 1.0,
+          fontSize: radius * 0.7,
+          fontWeight: FontWeight.w600,
+          height: 1.15,
         ),
       ),
     );
   }
+}
+
+// Thai above/below marks (U+0E31, U+0E34-0E3A, U+0E47-0E4E) and leading
+// vowels (U+0E40-0E44) can never stand alone as an initial.
+final RegExp _thaiNonInitial = RegExp('[ัิ-ฺ็-๎เ-ไ]');
+final RegExp _thaiLetter = RegExp('[ก-ฮ]');
+final RegExp _latinOrDigit = RegExp('[A-Za-z0-9]');
+
+/// Avatar initials that never render a dangling Thai mark or a bracket:
+/// "ลุงจืด (Super Admin)" -> "ล", "สมชาย ฝ่ายขาย" -> "สฝ", "BC Official OA" -> "BO".
+/// A second initial is only added when it is the same script as the first.
+String avatarInitials(String name) {
+  String? firstLetter(String word) {
+    for (final rune in word.runes) {
+      final ch = String.fromCharCode(rune);
+      if (_thaiNonInitial.hasMatch(ch)) continue;
+      if (_thaiLetter.hasMatch(ch)) return ch;
+      if (_latinOrDigit.hasMatch(ch)) return ch.toUpperCase();
+    }
+    return null;
+  }
+
+  final letters = <String>[];
+  for (final word in name.trim().split(RegExp(r'\s+'))) {
+    final letter = firstLetter(word);
+    if (letter != null) letters.add(letter);
+    if (letters.length == 2) break;
+  }
+  if (letters.isEmpty) return 'BC';
+  if (letters.length == 2 &&
+      _thaiLetter.hasMatch(letters[0]) == _thaiLetter.hasMatch(letters[1])) {
+    return letters.join();
+  }
+  return letters.first;
 }
 
 /// Global Baseline-Aligned Badge (Strict horizontal & vertical center alignment)
@@ -374,13 +779,19 @@ class PillBadge extends StatelessWidget {
             Icon(icon, size: 12, color: textColor),
             const SizedBox(width: 4),
           ],
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-              height: 1.1,
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+                height: 1.0,
+                leadingDistribution: TextLeadingDistribution.even,
+              ),
             ),
           ),
         ],

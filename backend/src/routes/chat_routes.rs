@@ -784,12 +784,16 @@ pub async fn mark_read_handler(
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
 
-    state.ws_hub.broadcast_event(json!({
-        "event": "message_read",
-        "conversation_id": conv_id,
-        "user_id": auth.user_id,
-        "modified_count": res.modified_count,
-    }));
+    // Open chat rooms refresh and mark read again on this event, so
+    // broadcasting a no-op would loop forever between clients.
+    if res.modified_count > 0 {
+        state.ws_hub.broadcast_event(json!({
+            "event": "message_read",
+            "conversation_id": conv_id,
+            "user_id": auth.user_id,
+            "modified_count": res.modified_count,
+        }));
+    }
 
     Ok(Json(json!({
         "status": "ok",

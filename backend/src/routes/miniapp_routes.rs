@@ -187,7 +187,7 @@ pub async fn serve_miniapp_html_handler(
         <input id="amount" type="text" value="{amount_default}" />
       </div>
       <button class="btn" onclick="sendFlexCard()">
-        <span>ส่งการ์ดเข้าห้องแชท LINE ทันที</span>
+        <span>ส่งการ์ดเข้าห้องแชททันที</span>
       </button>
       <div id="statusBox" class="status-box"></div>
     </div>

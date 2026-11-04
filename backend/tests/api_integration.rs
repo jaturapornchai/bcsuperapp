@@ -13,6 +13,7 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
     let state = AppState::init(config).await.expect("init AppState");
     seed_initial_data(&state).await.expect("seed initial data");
 
+    let mut ws_rx = state.ws_hub.tx.subscribe();
     let app = create_router(state);
 
     // 1. Health check
@@ -464,4 +465,31 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
     let handover_res: Value = serde_json::from_slice(&body_bytes).unwrap();
     assert_eq!(handover_res["status"], "ok");
     assert!(handover_res["transferred_conversations"].as_u64().unwrap() >= 1);
+
+    // 11. Marking an already-read room must not broadcast message_read:
+    // every open chat room refreshes and marks read again on that event,
+    // so a no-op broadcast turned into an endless request storm.
+    for _ in 0..2 {
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/conversations/conv_group_office/read")
+                    .header("authorization", format!("Bearer {}", token))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+    let mut noop_read_events = 0;
+    while let Ok(text) = ws_rx.try_recv() {
+        let event: Value = serde_json::from_str(&text).unwrap();
+        if event["event"] == "message_read" && event["modified_count"] == 0 {
+            noop_read_events += 1;
+        }
+    }
+    assert_eq!(noop_read_events, 0, "no-op read must not be broadcast");
 }

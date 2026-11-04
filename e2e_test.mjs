@@ -88,7 +88,7 @@ async function runE2E() {
   assert(metaRes.ok, `Update conversation meta failed: ${metaRes.text}`);
   console.log('✅ [4/15] สร้างกลุ่มองค์กร แยกโฟลเดอร์ "เรื่องงาน" และปักหมุดห้องแชทสำเร็จ');
 
-  // 5. Send Normal Message & Verify LINE-style "อ่านแล้ว" (Read Receipt)
+  // 5. Send Normal Message & Verify "อ่านแล้ว" (Read Receipt)
   const msg1 = await req('POST', `/api/conversations/${directConvId}/messages`, adminToken, {
     type: 'text',
     content: 'สวัสดีสมชาย ส่งสรุปยอดขายเดือนนี้และเตรียมใบเสนอราคาลูกค้าใหม่ให้ด้วยครับ',
