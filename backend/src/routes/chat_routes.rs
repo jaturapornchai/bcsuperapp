@@ -26,6 +26,26 @@ pub struct ListConversationsQuery {
     pub folder: Option<String>,
 }
 
+/// Loads a conversation only for its members, so outsiders can neither read
+/// nor post into group/confidential rooms.
+pub async fn require_member(
+    state: &AppState,
+    conv_id: &str,
+    user_id: &str,
+) -> Result<ConversationDoc, ApiError> {
+    let conv = state
+        .db
+        .collection::<ConversationDoc>("conversations")
+        .find_one(doc! { "_id": conv_id })
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("ไม่พบห้องแชท"))?;
+    if !conv.member_ids.iter().any(|id| id == user_id) {
+        return Err(ApiError::forbidden("คุณไม่ได้เป็นสมาชิกของห้องแชทนี้"));
+    }
+    Ok(conv)
+}
+
 pub async fn build_conversation_dto(
     state: &AppState,
     conv: ConversationDoc,
@@ -459,11 +479,7 @@ pub async fn update_conversation_meta_handler(
     Json(payload): Json<UpdateConvMetaRequest>,
 ) -> Result<Json<ConversationDto>, ApiError> {
     let conv_coll = state.db.collection::<ConversationDoc>("conversations");
-    let mut conv = conv_coll
-        .find_one(doc! { "_id": &conv_id })
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("ไม่พบห้องแชท"))?;
+    let mut conv = require_member(&state, &conv_id, &auth.user_id).await?;
 
     if let Some(folder) = payload.folder {
         conv.folder = folder.clone();
@@ -514,11 +530,7 @@ pub async fn pin_message_handler(
     let conv_coll = state.db.collection::<ConversationDoc>("conversations");
     let msg_coll = state.db.collection::<MessageDoc>("messages");
 
-    let mut conv = conv_coll
-        .find_one(doc! { "_id": &conv_id })
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("ไม่พบห้องแชท"))?;
+    let mut conv = require_member(&state, &conv_id, &auth.user_id).await?;
 
     let pinned_summary = match payload.message_id {
         Some(ref mid) if !mid.trim().is_empty() => {
@@ -560,10 +572,11 @@ pub async fn pin_message_handler(
 }
 
 pub async fn list_messages_handler(
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(conv_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<MessageDto>>, ApiError> {
+    require_member(&state, &conv_id, &auth.user_id).await?;
     let msg_coll = state.db.collection::<MessageDoc>("messages");
     let files_coll = state.db.collection::<FileDoc>("files");
 
@@ -635,11 +648,7 @@ pub async fn send_message_handler(
         .map_err(|e| ApiError::internal(e.to_string()))?
         .ok_or_else(|| ApiError::not_found("ไม่พบข้อมูลผู้ส่ง"))?;
 
-    let mut conv = conv_coll
-        .find_one(doc! { "_id": &conv_id })
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("ไม่พบห้องแชท"))?;
+    let mut conv = require_member(&state, &conv_id, &auth.user_id).await?;
 
     let msg_type = payload
         .msg_type
@@ -743,9 +752,6 @@ pub async fn send_message_handler(
         read_count: 0,
     });
     conv.updated_at = now;
-    if !conv.member_ids.contains(&auth.user_id) {
-        conv.member_ids.push(auth.user_id.clone());
-    }
 
     let _ = conv_coll
         .replace_one(doc! { "_id": &conv_id }, &conv)
@@ -770,6 +776,7 @@ pub async fn mark_read_handler(
     Path(conv_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
+    require_member(&state, &conv_id, &auth.user_id).await?;
     let msg_coll = state.db.collection::<MessageDoc>("messages");
     let res = msg_coll
         .update_many(
@@ -946,10 +953,11 @@ async fn execute_unsend_or_purge(
 }
 
 pub async fn clear_confidential_messages_handler(
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(conv_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
+    require_member(&state, &conv_id, &auth.user_id).await?;
     let msg_coll = state.db.collection::<MessageDoc>("messages");
     let files_coll = state.db.collection::<FileDoc>("files");
 
@@ -992,10 +1000,11 @@ pub async fn clear_confidential_messages_handler(
 }
 
 pub async fn conversation_vault_handler(
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(conv_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<VaultResponse>, ApiError> {
+    require_member(&state, &conv_id, &auth.user_id).await?;
     let msg_coll = state.db.collection::<MessageDoc>("messages");
     let cursor = msg_coll
         .find(doc! { "conversation_id": &conv_id, "is_unsent": false })
@@ -1138,6 +1147,7 @@ pub async fn list_notes_handler(
 
     let filter = match query.conversation_id {
         Some(ref cid) if !cid.trim().is_empty() => {
+            require_member(&state, cid.trim(), &auth.user_id).await?;
             doc! { "conversation_id": cid.trim() }
         }
         _ => {
@@ -1194,6 +1204,11 @@ pub async fn create_note_handler(
         .map_err(|e| ApiError::internal(e.to_string()))?
         .ok_or_else(|| ApiError::not_found("ไม่พบผู้ใช้"))?;
 
+    if let Some(cid) = payload.conversation_id.as_deref().map(str::trim) {
+        if !cid.is_empty() {
+            require_member(&state, cid, &auth.user_id).await?;
+        }
+    }
     let conv_id = payload.conversation_id.and_then(|s| {
         if s.trim().is_empty() {
             None

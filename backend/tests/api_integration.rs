@@ -533,6 +533,23 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
         Some(json!({ "preset": original }))).await;
     assert_eq!(status, StatusCode::OK);
 
+    // 14. Outsiders (even an admin) can neither read nor post into a room they
+    // are not a member of, and posting must not silently add them.
+    let room = "/api/conversations/conv_group_test5";
+    for (method, uri, body) in [
+        ("GET", format!("{room}/messages"), None),
+        ("POST", format!("{room}/messages"), Some(json!({ "type": "text", "content": "แอบส่ง" }))),
+        ("GET", format!("{room}/vault"), None),
+        ("POST", format!("{room}/read"), None),
+        ("POST", "/api/ai/summarize".to_string(), Some(json!({ "conversation_id": "conv_group_test5" }))),
+    ] {
+        let (status, _) = call(&app, method, &uri, Some(&token), body).await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{method} {uri} must reject non-members");
+    }
+    let (_, convs) = call(&app, "GET", "/api/conversations", Some(&tester_token), None).await;
+    let members = convs.as_array().unwrap().iter()
+        .find(|c| c["id"] == "conv_group_test5").unwrap()["members"].as_array().unwrap().len();
+    assert_eq!(members, 6, "outsider post must not join the room");
 }
 
 async fn call(

@@ -326,18 +326,18 @@ pub struct SummarizeRequest {
 }
 
 pub async fn summarize_conversation_handler(
-    _auth: AuthUser,
+    auth: AuthUser,
     State(state): State<AppState>,
     Json(payload): Json<SummarizeRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let conv_coll = state.db.collection::<ConversationDoc>("conversations");
     let msg_coll = state.db.collection::<MessageDoc>("messages");
 
-    let mut conv = conv_coll
-        .find_one(doc! { "_id": payload.conversation_id.trim() })
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("ไม่พบห้องแชทที่ต้องการสรุป"))?;
+    let mut conv = crate::routes::chat_routes::require_member(
+        &state,
+        payload.conversation_id.trim(),
+        &auth.user_id,
+    )
+    .await?;
 
     let cursor = msg_coll
         .find(doc! { "conversation_id": &conv.id, "is_unsent": false })
@@ -404,7 +404,7 @@ pub struct AssistRequest {
 }
 
 pub async fn assist_message_handler(
-    _auth: AuthUser,
+    auth: AuthUser,
     State(state): State<AppState>,
     Json(payload): Json<AssistRequest>,
 ) -> Result<Json<Value>, ApiError> {
@@ -417,6 +417,7 @@ pub async fn assist_message_handler(
     let mut history: Vec<MessageDoc> = Vec::new();
     if let Some(ref cid) = payload.conversation_id {
         if !cid.trim().is_empty() {
+            crate::routes::chat_routes::require_member(&state, cid.trim(), &auth.user_id).await?;
             let msg_coll = state.db.collection::<MessageDoc>("messages");
             if let Ok(cursor) = msg_coll
                 .find(doc! { "conversation_id": cid.trim(), "is_unsent": false })
