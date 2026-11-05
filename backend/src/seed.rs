@@ -44,6 +44,10 @@ pub async fn ensure_mongo_indexes(db: &mongodb::Database) {
         ])
         .await;
     let _ = db
+        .collection::<bson::Document>("device_tokens")
+        .create_index(IndexModel::builder().keys(doc! { "user_id": 1 }).build())
+        .await;
+    let _ = db
         .collection::<FriendshipDoc>("friendships")
         .create_index(
             IndexModel::builder()

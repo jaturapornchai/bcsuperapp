@@ -1,6 +1,7 @@
 // Synthesises the chat alert sounds in assets/sounds/ (original tones, no
 // third-party audio). Run from frontend/:  node tool/make_alert_sounds.mjs
-// Codes must match NotificationService.sounds.
+// Codes must match NotificationService.sounds. Also writes the Android copies
+// (res/raw/alert_<code>.wav) that push notification channels play.
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 const RATE = 22050;
@@ -53,7 +54,9 @@ function wav(samples) {
   return Buffer.concat([h, data]);
 }
 
+const RAW = 'android/app/src/main/res/raw';
 mkdirSync('assets/sounds', { recursive: true });
+mkdirSync(RAW, { recursive: true });
 for (const [code, [seconds, draw]] of Object.entries(SOUNDS)) {
   const buf = new Float64Array(Math.round(seconds * RATE));
   draw(buf);
@@ -63,5 +66,6 @@ for (const [code, [seconds, draw]] of Object.entries(SOUNDS)) {
     buf[i] = (buf[i] / peak) * 0.8 * Math.min(1, (buf.length - i) / fade);
   }
   writeFileSync(`assets/sounds/${code}.wav`, wav(buf));
+  writeFileSync(`${RAW}/alert_${code}.wav`, wav(buf));
   console.log(`${code}.wav ${seconds}s`);
 }

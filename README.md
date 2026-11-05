@@ -76,6 +76,7 @@
 9. **ธีมสีตามประเภทกิจการ (Admin)**: ผู้ดูแลเลือกธีม 7 แบบ (ภาษาไทย) ในหลังบ้าน ทุกเครื่องในองค์กรเปลี่ยนสีทันทีผ่าน WebSocket `theme_changed`
 10. **บัญชีทดสอบแชท 5 คน**: `tester1-5@bcapp.local` อยู่ใน "ห้องทดสอบแชท 5 คน" พร้อม BC AI; บน Windows กดปุ่ม **"เปิด 5 หน้าต่าง คุยกันได้ทันที"** ที่หน้าเข้าสู่ระบบ (แต่ละหน้าต่าง login อัตโนมัติและเรียงกันบนจอ)
 11. **สิทธิ์การเข้าถึง**: อ่าน/ส่ง/รับ WebSocket ของห้องได้เฉพาะสมาชิกห้อง; `/api/admin/*` และตั้งค่า AI ใช้ได้เฉพาะ role `admin`; ผู้สมัครใหม่เป็น role `user` (ผู้ดูแลเลื่อนสิทธิ์ในหลังบ้าน)
+12. **แจ้งเตือนตอนปิดแอป (Push ผ่าน Firebase Cloud Messaging — Android & เว็บ)**: backend ส่ง push เฉพาะเครื่องที่ไม่ได้ต่อ WebSocket อยู่ (ไม่เด้งซ้ำกับป๊อปอัปในแอป) ใช้เสียงที่เลือกไว้ต่อเครื่อง แตะแล้วเปิดห้องนั้น; แอปต่อ WebSocket ใหม่เองเมื่อเน็ตหลุด/เซิร์ฟเวอร์รีสตาร์ท และ backend ping ทุก 20 วินาทีเพื่อจับเครื่องที่หลุดเงียบ — วิธีสร้าง Firebase และรายละเอียด: [docs/push-fcm.md](docs/push-fcm.md)
 
 ---
 
@@ -124,6 +125,8 @@ flowchart LR
 - `GOOGLE_CLIENT_ID` — Google OAuth2 Client ID สำหรับระบบเข้าสู่ระบบด้วย Gmail
 - `DEEPSEEK_API_KEY` — API Key ของสมองกล DeepSeek (เก็บเฉพาะใน `.env` หรือตั้งค่าผ่านหน้า Admin Backoffice แบบเข้ารหัส/ซ่อนรหัส `sk-****`)
 - `DEEPSEEK_MODEL=deepseek-chat` — รุ่นโมเดล (`deepseek-chat` หรือ `deepseek-reasoner`)
+- `FCM_SERVICE_ACCOUNT_FILE` — path ไฟล์ service account ของ Firebase (เช่น `secrets/fcm-service-account.json` นับจาก `backend/`); ว่าง = ปิด push
+- `FCM_WEB_API_KEY` / `FCM_WEB_APP_ID` / `FCM_WEB_SENDER_ID` / `FCM_WEB_VAPID_KEY` — ค่าแอปเว็บใน Firebase สำหรับ push บนเบราว์เซอร์ (ดู [docs/push-fcm.md](docs/push-fcm.md))
 
 ---
 
@@ -134,6 +137,7 @@ flowchart LR
 - **Node.js**: `20+` สำหรับรันชุดทดสอบอัตโนมัติ `e2e_test.mjs` / `e2e_chat5.mjs` และสร้างไฟล์เสียงเตือน
 - **Visual Studio Build Tools 2022** (build Windows): workload "Desktop development with C++" + ส่วนเสริม **"C++ ATL for latest v143 build tools"** (แพ็กเกจแจ้งเตือนบน Windows ต้องใช้)
 - **แพ็กเกจ Flutter สำหรับแจ้งเตือน**: `flutter_local_notifications` (ป๊อปอัป), `audioplayers` (เล่นเสียงที่เลือก); Android เปิด core library desugaring ใน `android/app/build.gradle.kts`
+- **Push**: Android `firebase-messaging` (Firebase BoM 35.1.0) + Gradle plugin `com.google.gms.google-services` 4.5.0 (ใช้เมื่อมี `frontend/android/app/google-services.json`), เว็บใช้ Firebase JS SDK 13.2.0 จาก gstatic; **openssl** สำหรับ `cargo test --test push_integration`
 
 ---
 
@@ -177,5 +181,5 @@ flutter build apk --release       # -> build\app\outputs\flutter-apk\app-release
 ## Limitation
 - การล็อกอินด้วย Google Sign-In บนโดเมน Production ต้องผูก `GOOGLE_CLIENT_ID` ที่ตั้งค่า Authorized Origins ใน Google Cloud Console ให้ตรงกับโดเมนจริง
 - การคอมไพล์แอปสำหรับ `iOS` และ `macOS` ต้องรันคำสั่ง `flutter build ios` / `flutter build macos` บนเครื่องระบบปฏิบัติการ macOS ที่มี Xcode ติดตั้งอยู่
-- การแจ้งเตือนและเสียงทำงานเมื่อแอปเปิดอยู่ (รวมย่อหน้าต่าง/อยู่เบื้องหลัง) เท่านั้น; ถ้าปิดแอปสนิทจะไม่มีเตือน จนกว่าจะเชื่อม Push (FCM สำหรับ Android/เว็บ, APNs สำหรับ iOS/macOS) ซึ่งต้องมีบัญชีและคีย์ของผู้ให้บริการ
+- แจ้งเตือนตอนปิดแอปสนิทใช้ได้บน Android และเว็บ หลังสร้างโปรเจกต์ Firebase และใส่คีย์ตาม [docs/push-fcm.md](docs/push-fcm.md); Windows เตือนได้เฉพาะตอนแอปเปิดอยู่ (FCM ไม่รองรับ Windows), iOS/macOS ต้องใช้ APNs + บัญชี Apple Developer (ยังไม่ทำ)
 - เว็บ: เบราว์เซอร์ต้องอนุญาตการแจ้งเตือน (บางเบราว์เซอร์ เช่น Firefox ถามได้เฉพาะเมื่อผู้ใช้กดเอง) และเล่นเสียงได้หลังผู้ใช้แตะหน้าเว็บแล้วอย่างน้อยครั้งหนึ่ง

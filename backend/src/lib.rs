@@ -2,6 +2,7 @@ pub mod auth;
 pub mod config;
 pub mod minio;
 pub mod models;
+pub mod push;
 pub mod routes;
 pub mod seed;
 pub mod ws;
@@ -42,6 +43,7 @@ use crate::{
         },
         file_routes::{get_file_handler, upload_handler},
         miniapp_routes::{list_active_mini_apps_handler, serve_miniapp_html_handler},
+        push_routes::{push_config_handler, register_device_handler, unregister_device_handler},
     },
     ws::{ws_handler, WsHub},
 };
@@ -52,6 +54,8 @@ pub struct AppState {
     pub db: Database,
     pub minio: MinioClient,
     pub ws_hub: WsHub,
+    /// None = push off (no FCM service account configured).
+    pub push: Option<std::sync::Arc<push::Fcm>>,
 }
 
 impl AppState {
@@ -69,12 +73,14 @@ impl AppState {
         );
 
         let ws_hub = WsHub::new();
+        let push = push::Fcm::from_config(&config);
 
         Ok(Self {
             config,
             db,
             minio,
             ws_hub,
+            push,
         })
     }
 }
@@ -177,6 +183,10 @@ pub fn create_router(state: AppState) -> Router {
         )
         .route("/api/admin/broadcast", post(admin_broadcast_handler))
         .route("/api/admin/handover", post(admin_handover_handler))
+        // Push alerts (FCM)
+        .route("/api/devices", post(register_device_handler))
+        .route("/api/devices/:id", delete(unregister_device_handler))
+        .route("/api/push/config", get(push_config_handler))
         // WebSocket
         .route("/ws", get(ws_handler))
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024))

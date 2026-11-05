@@ -16,6 +16,12 @@ pub struct AppConfig {
     pub deepseek_api_key: String,
     pub deepseek_model: String,
     pub deepseek_base_url: String,
+    pub fcm_service_account_file: String,
+    pub fcm_api_base: String,
+    pub fcm_web_api_key: String,
+    pub fcm_web_app_id: String,
+    pub fcm_web_sender_id: String,
+    pub fcm_web_vapid_key: String,
 }
 
 impl AppConfig {
@@ -67,6 +73,12 @@ impl AppConfig {
             .trim_end_matches('/')
             .to_string();
 
+        let env_trim = |k: &str| env::var(k).unwrap_or_default().trim().to_string();
+        let fcm_api_base = env::var("FCM_API_BASE")
+            .unwrap_or_else(|_| "https://fcm.googleapis.com".to_string())
+            .trim_end_matches('/')
+            .to_string();
+
         Self {
             port,
             mongodb_uri,
@@ -82,6 +94,12 @@ impl AppConfig {
             deepseek_api_key,
             deepseek_model,
             deepseek_base_url,
+            fcm_service_account_file: env_trim("FCM_SERVICE_ACCOUNT_FILE"),
+            fcm_api_base,
+            fcm_web_api_key: env_trim("FCM_WEB_API_KEY"),
+            fcm_web_app_id: env_trim("FCM_WEB_APP_ID"),
+            fcm_web_sender_id: env_trim("FCM_WEB_SENDER_ID"),
+            fcm_web_vapid_key: env_trim("FCM_WEB_VAPID_KEY"),
         }
     }
 }

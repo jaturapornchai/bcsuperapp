@@ -41,6 +41,28 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    // Web push token for PushService (lib/services/push_web.dart). The Firebase
+    // config comes from the backend (/api/push/config), so nothing is in git,
+    // and the SDK loads only when push is set up.
+    window.bcPushGetToken = async (configJson) => {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+      if (Notification.permission === 'default') await Notification.requestPermission();
+      if (Notification.permission !== 'granted') return null;
+      const { vapidKey, ...config } = JSON.parse(configJson);
+      const sdk = 'https://www.gstatic.com/firebasejs/13.2.0/';
+      const { initializeApp, getApps } = await import(sdk + 'firebase-app.js');
+      const { getMessaging, getToken } = await import(sdk + 'firebase-messaging.js');
+      const reg = await navigator.serviceWorker.register('push_sw.js', { scope: './push/' });
+      const worker = reg.installing || reg.waiting;
+      if (!reg.active && worker) {
+        await new Promise((done) => worker.addEventListener('statechange',
+          () => worker.state === 'activated' && done()));
+      }
+      const app = getApps()[0] || initializeApp(config);
+      return getToken(getMessaging(app), { vapidKey, serviceWorkerRegistration: reg });
+    };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

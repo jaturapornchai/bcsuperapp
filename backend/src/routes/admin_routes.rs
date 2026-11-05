@@ -411,6 +411,7 @@ pub async fn admin_broadcast_handler(
                     "conversation_id": conv.id,
                     "message": dto,
                 }));
+                crate::push::notify_new_message(&state, &conv, &dto);
                 sent_count += 1;
             }
         }

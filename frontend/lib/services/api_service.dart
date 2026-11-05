@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +19,7 @@ class ApiService {
   static const String _prefTokenKey = 'bcapp_jwt_token';
   static const String _prefUserKey = 'bcapp_user_json';
   static const String _prefChatThemeKey = 'bcapp_chat_theme';
+  static const String _prefDeviceKey = 'bcapp_device_id';
 
   String? _token;
   AppUser? _currentUser;
@@ -25,6 +27,10 @@ class ApiService {
 
   WebSocketChannel? _wsChannel;
   StreamSubscription? _wsSub;
+  Timer? _wsRetryTimer;
+  int _wsGen = 0; // bumped on disconnect so stale retries stop
+  int _wsRetries = 0;
+  String? _deviceId;
   final StreamController<Map<String, dynamic>> _wsController =
       StreamController<Map<String, dynamic>>.broadcast();
 
@@ -88,8 +94,57 @@ class ApiService {
     await prefs.setString(_prefUserKey, jsonEncode(user.toJson()));
   }
 
+  /// Random id of this app install, kept across sign-ins (push target).
+  Future<String> deviceId() async {
+    if (_deviceId != null) return _deviceId!;
+    final prefs = await SharedPreferences.getInstance();
+    var id = prefs.getString(_prefDeviceKey);
+    if (id == null || id.length < 8) {
+      final r = Random.secure();
+      id = List.generate(
+        16,
+        (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0'),
+      ).join();
+      await prefs.setString(_prefDeviceKey, id);
+    }
+    return _deviceId = id;
+  }
+
+  /// {enabled, web}: web = Firebase web config, null when push is off.
+  Future<Map<String, dynamic>> fetchPushConfig() async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/push/config'),
+      headers: _headers,
+    );
+    if (res.statusCode != 200) return const {};
+    final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+    return decoded is Map<String, dynamic> ? decoded : const {};
+  }
+
+  Future<void> registerDevice(Map<String, dynamic> body) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/devices'),
+      headers: _headers,
+      body: jsonEncode({...body, 'device_id': await deviceId()}),
+    );
+    if (res.statusCode != 200) {
+      throw Exception('register device: ${res.statusCode}');
+    }
+  }
+
   Future<void> logout() async {
     disconnectWebSocket();
+    if (_token != null) {
+      // Stop push to this device for the account that signs out.
+      try {
+        await http
+            .delete(
+              Uri.parse('$baseUrl/api/devices/${await deviceId()}'),
+              headers: _headers,
+            )
+            .timeout(const Duration(seconds: 3));
+      } catch (_) {}
+    }
     _token = null;
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
@@ -99,14 +154,23 @@ class ApiService {
 
   void connectWebSocket() {
     disconnectWebSocket();
+    _openWebSocket(_wsGen);
+  }
+
+  Future<void> _openWebSocket(int gen) async {
     final jwt = _token;
     if (jwt == null || jwt.isEmpty) return;
+    final device = await deviceId();
+    if (gen != _wsGen) return; // disconnected while reading the id
 
     try {
-      final uri = Uri.parse('$wsBaseUrl?token=${Uri.encodeComponent(jwt)}');
+      final uri = Uri.parse(
+        '$wsBaseUrl?token=${Uri.encodeComponent(jwt)}&device=$device',
+      );
       _wsChannel = WebSocketChannel.connect(uri);
       _wsSub = _wsChannel!.stream.listen(
         (raw) {
+          _wsRetries = 0;
           if (raw is String && raw.isNotEmpty) {
             try {
               final decoded = jsonDecode(raw);
@@ -121,13 +185,36 @@ class ApiService {
             } catch (_) {}
           }
         },
-        onError: (_) {},
-        onDone: () {},
+        onError: (_) => _retryWebSocket(gen),
+        onDone: () => _retryWebSocket(gen),
       );
-    } catch (_) {}
+    } catch (_) {
+      _retryWebSocket(gen);
+    }
+  }
+
+  /// The socket dropped (network change, server restart): reconnect after
+  /// 2, 4, 8, 16 then every 30 seconds so live updates and alerts return.
+  void _retryWebSocket(int gen) {
+    if (gen != _wsGen || _token == null || _wsRetryTimer?.isActive == true) {
+      return;
+    }
+    final wait = Duration(seconds: min(30, 2 << min(_wsRetries++, 4)));
+    _wsRetryTimer = Timer(wait, () {
+      if (gen != _wsGen) return;
+      _closeWebSocket();
+      _openWebSocket(gen);
+    });
   }
 
   void disconnectWebSocket() {
+    _wsGen++;
+    _wsRetries = 0;
+    _wsRetryTimer?.cancel();
+    _closeWebSocket();
+  }
+
+  void _closeWebSocket() {
     _wsSub?.cancel();
     _wsSub = null;
     try {

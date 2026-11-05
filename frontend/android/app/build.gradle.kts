@@ -45,6 +45,14 @@ flutter {
     source = "../.."
 }
 
+// Push works only with android/app/google-services.json from the Firebase
+// console (kept out of git); without it the app builds with in-app alerts only.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation(platform("com.google.firebase:firebase-bom:35.1.0"))
+    implementation("com.google.firebase:firebase-messaging")
 }

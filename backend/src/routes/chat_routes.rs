@@ -764,6 +764,7 @@ pub async fn send_message_handler(
         "conversation_id": conv_id,
         "message": dto,
     }));
+    crate::push::notify_new_message(&state, &conv, &dto);
 
     // Trigger DeepSeek AI Co-Pilot if message is in 1-1 chat with AI or mentions @ai
     let _ = crate::routes::ai_routes::maybe_trigger_ai_reply(&state, &mut conv, &msg_doc).await;

@@ -4,6 +4,11 @@
 *.pem
 *.key
 credentials*.json
+# Firebase credentials (push) stay local
+secrets/
+*firebase-adminsdk*.json
+google-services.json
+GoogleService-Info.plist
 backend/target/
 frontend/.dart_tool/
 frontend/build/

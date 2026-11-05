@@ -605,6 +605,7 @@ pub async fn insert_ai_message(
         "conversation_id": conv.id,
         "message": dto,
     }));
+    crate::push::notify_new_message(&state, conv, &dto);
 
     Ok(dto)
 }

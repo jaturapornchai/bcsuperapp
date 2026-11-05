@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../services/push_service.dart';
 import '../theme/app_theme.dart';
 import 'chat_room_screen.dart';
 import 'mini_app_runner_screen.dart';
@@ -64,7 +65,9 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _user = widget.currentUser;
-    _loadAllData();
+    _loadAllData().then(
+      (_) => PushService.instance.listenForOpens(_openConversationById),
+    );
     _wsSub = ApiService.instance.wsEvents.listen((event) {
       _refreshConversationsAndFriends();
       final convId = event['conversation_id']?.toString();
@@ -76,6 +79,7 @@ class _MainShellState extends State<MainShell> {
     });
     NotificationService.instance.onOpenConversation = _openConversationById;
     NotificationService.instance.init();
+    PushService.instance.start();
   }
 
   /// Tap on a message pop-up: bring that room on screen.
@@ -97,6 +101,7 @@ class _MainShellState extends State<MainShell> {
       _user = widget.currentUser;
       _activeConversation = null;
       _loadAllData();
+      PushService.instance.start();
     }
   }
 

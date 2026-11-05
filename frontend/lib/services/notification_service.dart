@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/models.dart';
+import 'push_service.dart';
 
 /// Which kind of message an alert is for; each kind has its own sound.
 enum AlertKind {
@@ -21,7 +22,7 @@ enum AlertKind {
 /// incoming chat messages while the app is running. Fed by MainShell's
 /// WebSocket listener; tapping a pop-up opens that room. Settings are kept
 /// per device.
-// ponytail: no push when the app is closed — that needs FCM/APNs credentials.
+// Alerts while the app is closed come from PushService (FCM).
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -49,6 +50,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   final AudioPlayer _player = AudioPlayer();
   bool _initialized = false;
+  Future<void>? _initDone;
 
   bool popupEnabled = true;
   bool soundEnabled = true;
@@ -65,8 +67,10 @@ class NotificationService {
 
   String soundOf(AlertKind kind) => _soundOf[kind]!;
 
-  Future<void> init() async {
-    if (_initialized) return;
+  /// Safe to call many times; every caller waits for the same set-up.
+  Future<void> init() => _initDone ??= _init();
+
+  Future<void> _init() async {
     _initialized = true;
     await _loadSettings();
     try {
@@ -107,11 +111,13 @@ class NotificationService {
   Future<void> setPopupEnabled(bool value) async {
     popupEnabled = value;
     await (await SharedPreferences.getInstance()).setBool(_prefPopup, value);
+    PushService.instance.syncSettings();
   }
 
   Future<void> setSoundEnabled(bool value) async {
     soundEnabled = value;
     await (await SharedPreferences.getInstance()).setBool(_prefSound, value);
+    PushService.instance.syncSettings();
   }
 
   Future<void> setSoundOf(AlertKind kind, String code) async {
@@ -120,6 +126,33 @@ class NotificationService {
       '$_prefSoundOf${kind.name}',
       code,
     );
+    PushService.instance.syncSettings();
+  }
+
+  /// Android plays a push's sound from its channel and fixes a channel's
+  /// sound when first made, so each sound gets its own channel
+  /// (push_<code>, file res/raw/alert_<code>). The backend picks the channel.
+  Future<void> createPushChannels() async {
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return;
+    for (final s in sounds) {
+      final quiet = s.code == noSound;
+      await android.createNotificationChannel(
+        AndroidNotificationChannel(
+          'push_${s.code}',
+          'ข้อความตอนปิดแอป · ${s.name}',
+          description: 'แจ้งเตือนข้อความใหม่เมื่อแอปปิดอยู่',
+          importance: Importance.high,
+          playSound: !quiet,
+          sound: quiet
+              ? null
+              : RawResourceAndroidNotificationSound('alert_${s.code}'),
+        ),
+      );
+    }
   }
 
   /// Plays a sound by code (also used for the preview in settings).
