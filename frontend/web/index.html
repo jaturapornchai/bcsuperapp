@@ -62,6 +62,24 @@
       const app = getApps()[0] || initializeApp(config);
       return getToken(getMessaging(app), { vapidKey, serviceWorkerRegistration: reg });
     };
+    window.bcPushListenOpens = (onOpen) => {
+      window._bcPushOnOpen = onOpen;
+      if (!window._bcPushSwBound && 'serviceWorker' in navigator) {
+        window._bcPushSwBound = true;
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          const d = event.data;
+          if (
+            d &&
+            d.type === 'openConversation' &&
+            typeof d.conversation === 'string' &&
+            d.conversation &&
+            typeof window._bcPushOnOpen === 'function'
+          ) {
+            window._bcPushOnOpen(d.conversation);
+          }
+        });
+      }
+    };
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>

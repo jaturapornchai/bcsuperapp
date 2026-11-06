@@ -153,36 +153,51 @@ impl Fcm {
     }
 
     /// Ok(false) = FCM says the token is gone (app uninstalled / token rotated).
+    /// Retries transient 429/5xx responses with bounded backoff.
     async fn send(&self, message: Value) -> Result<bool, String> {
-        let access = self.access_token().await?;
+        const RETRY_DELAYS_MS: [u64; 3] = [100, 300, 900];
         let url = format!(
             "{}/v1/projects/{}/messages:send",
             self.api_base, self.project_id
         );
-        let res = self
-            .http
-            .post(url)
-            .bearer_auth(access)
-            .json(&json!({ "message": message }))
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        let status = res.status();
-        if status.is_success() {
-            return Ok(true);
+        let payload = json!({ "message": message });
+        let mut last_err = String::new();
+
+        for attempt in 0..=RETRY_DELAYS_MS.len() {
+            let access = self.access_token().await?;
+            let res = self
+                .http
+                .post(&url)
+                .bearer_auth(access)
+                .json(&payload)
+                .send()
+                .await
+                .map_err(|e| e.to_string())?;
+            let status = res.status();
+            if status.is_success() {
+                return Ok(true);
+            }
+            let body: Value = res.json().await.unwrap_or(Value::Null);
+            let unregistered = body["error"]["details"]
+                .as_array()
+                .is_some_and(|d| d.iter().any(|x| x["errorCode"] == "UNREGISTERED"));
+            if unregistered {
+                return Ok(false);
+            }
+            if status.as_u16() == 401 {
+                *self.access.lock().await = None;
+            }
+            last_err = format!("FCM {status}: {}", body["error"]["message"]);
+            let retryable = status.as_u16() == 429 || status.is_server_error();
+            if retryable {
+                if let Some(&delay_ms) = RETRY_DELAYS_MS.get(attempt) {
+                    tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+                    continue;
+                }
+            }
+            return Err(last_err);
         }
-        let body: Value = res.json().await.unwrap_or(Value::Null);
-        let unregistered = body["error"]["details"]
-            .as_array()
-            .is_some_and(|d| d.iter().any(|x| x["errorCode"] == "UNREGISTERED"));
-        if unregistered {
-            return Ok(false);
-        }
-        if status.as_u16() == 401 {
-            *self.access.lock().await = None;
-        }
-        // ponytail: no retry on 429/5xx; add backoff if FCM throttling shows up.
-        Err(format!("FCM {status}: {}", body["error"]["message"]))
+        Err(last_err)
     }
 }
 

@@ -49,8 +49,24 @@ async fn mock_send(
 ) -> (StatusCode, Json<Value>) {
     assert_eq!(uri.path(), "/v1/projects/test-proj/messages:send");
     assert_eq!(headers["authorization"], "Bearer mock-access");
-    let dead = body["message"]["token"] == "dead-token";
-    m.sends.lock().unwrap().push(body);
+    let tok = body["message"]["token"].as_str().unwrap_or_default().to_string();
+    let dead = tok == "dead-token";
+    let prev_attempts = {
+        let mut sends = m.sends.lock().unwrap();
+        let count = sends
+            .iter()
+            .filter(|s| s["message"]["token"].as_str() == Some(tok.as_str()))
+            .count();
+        sends.push(body);
+        count
+    };
+    if tok.starts_with("tok-503-") && prev_attempts == 0 {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({ "error": { "code": 503, "status": "UNAVAILABLE",
+                "message": "The service is currently unavailable." } })),
+        );
+    }
     if dead {
         return (
             StatusCode::NOT_FOUND,
@@ -105,10 +121,12 @@ async fn test_push_to_offline_devices_through_fcm() {
     let state = AppState::init(config).await.expect("init AppState");
     assert!(state.push.is_some(), "push must load the service account");
     seed_initial_data(&state).await.expect("seed");
+    let devices = state.db.collection::<bson::Document>("device_tokens");
+    devices.delete_many(bson::doc! { "_id": { "$regex": "^test-" } }).await.unwrap();
     let app = create_router(state.clone());
 
     let mut tokens = Vec::new();
-    for (_, email, name) in &TEST_ACCOUNTS[..4] {
+    for (_, email, name) in &TEST_ACCOUNTS[..5] {
         let (status, body) = call(&app, "POST", "/api/auth/google", None,
             Some(json!({ "email": email, "display_name": name }))).await;
         assert_eq!(status, StatusCode::OK);
@@ -133,11 +151,13 @@ async fn test_push_to_offline_devices_through_fcm() {
     let (status, _) = call(&app, "POST", "/api/devices", None, Some(register(9, "tok", true))).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
-    // tester1 = sender, 2 = normal, 3 = token FCM no longer knows, 4 = pop-ups off.
+    // tester1 = sender, 2 = normal, 3 = token FCM no longer knows, 4 = pop-ups off, 5 = 503 then 200.
     let ok_token = format!("tok-ok-{run}");
     let own_token = format!("tok-own-{run}");
+    let flaky_token = format!("tok-503-{run}");
     for (i, (token, popup)) in [(own_token.as_str(), true), (ok_token.as_str(), true),
-                                ("dead-token", true), ("tok-quiet", false)].into_iter().enumerate() {
+                                ("dead-token", true), ("tok-quiet", false),
+                                (flaky_token.as_str(), true)].into_iter().enumerate() {
         let (status, body) = call(&app, "POST", "/api/devices", Some(&tokens[i]),
             Some(register(i + 1, token, popup))).await;
         assert_eq!(status, StatusCode::OK, "{body}");
@@ -159,19 +179,28 @@ async fn test_push_to_offline_devices_through_fcm() {
     assert_eq!(status, StatusCode::OK);
 
     let mut gone = false;
-    for _ in 0..50 {
-        tokio::time::sleep(Duration::from_millis(100)).await;
+    for _ in 0..30 {
+        tokio::time::sleep(Duration::from_millis(50)).await;
         let sent = mock.sends.lock().unwrap().len();
         gone = devices.find_one(bson::doc! { "_id": dev(3) }).await.unwrap().is_none();
-        if sent >= 2 && gone {
+        if sent >= 4 && gone {
             break;
         }
     }
     let sends = mock.sends.lock().unwrap().clone();
     let to: Vec<&str> = sends.iter().filter_map(|s| s["message"]["token"].as_str()).collect();
-    assert_eq!(sends.len(), 2, "only offline devices with pop-ups on: {to:?}");
+    assert_eq!(
+        to.iter().filter(|&&t| t == flaky_token.as_str()).count(),
+        2,
+        "503 response must be retried and succeed on the next attempt: {to:?}"
+    );
+    assert_eq!(sends.len(), 4, "offline devices with pop-ups on (including 1 retry): {to:?}");
     assert!(to.contains(&ok_token.as_str()) && to.contains(&"dead-token"));
     assert!(gone, "UNREGISTERED token must be deleted");
+    assert!(
+        devices.find_one(bson::doc! { "_id": dev(5) }).await.unwrap().is_some(),
+        "transient 503 token must not be deleted"
+    );
 
     let msg = &sends.iter().find(|s| s["message"]["token"] == ok_token.as_str()).unwrap()["message"];
     assert_eq!(msg["data"]["conversation_id"], "conv_group_test5");
@@ -194,7 +223,7 @@ async fn test_push_to_offline_devices_through_fcm() {
     assert_eq!(jwt.header.kid.as_deref(), Some("test-key-id"));
     assert_eq!(jwt.claims["scope"], "https://www.googleapis.com/auth/firebase.messaging");
 
-    for i in [1, 2, 4] {
+    for i in [1, 2, 4, 5] {
         let (status, _) = call(&app, "DELETE", &format!("/api/devices/{}", dev(i)), Some(&tokens[i - 1]), None).await;
         assert_eq!(status, StatusCode::OK);
     }

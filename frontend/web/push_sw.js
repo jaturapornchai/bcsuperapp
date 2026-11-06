@@ -28,10 +28,12 @@ self.addEventListener('notificationclick', (event) => {
   const url = id ? root + '?conversation=' + encodeURIComponent(id) : root;
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-      // ponytail: an already open tab is only focused (this worker does not
-      // control it, so it cannot steer it); push goes to closed tabs anyway.
       const open = list.find((c) => c.url.startsWith(root));
-      return open ? open.focus() : self.clients.openWindow(url);
+      if (open) {
+        if (id) open.postMessage({ type: 'openConversation', conversation: id });
+        return open.focus();
+      }
+      return self.clients.openWindow(url);
     }),
   );
 });
