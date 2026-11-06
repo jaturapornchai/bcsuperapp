@@ -150,18 +150,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       final msgs = await ApiService.instance.fetchMessages(_conversation.id);
       await ApiService.instance.markConversationRead(_conversation.id);
       if (!mounted) return;
+      // Follow new messages from others only if the reader is already at the end.
+      final follow = msgs.length > _messages.length &&
+          (!_scrollCtrl.hasClients || _scrollCtrl.position.extentAfter < 200);
       setState(() => _messages = msgs);
+      if (follow) _scrollToBottom();
     } catch (_) {}
   }
 
   void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollCtrl.hasClients) {
-        _scrollCtrl.animateTo(
-          _scrollCtrl.position.maxScrollExtent + 120,
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // ListView.builder only measures the tail once it is laid out, so
+      // maxScrollExtent grows while we scroll; chase it until it settles.
+      for (var i = 0; i < 6 && mounted && _scrollCtrl.hasClients; i++) {
+        final target = _scrollCtrl.position.maxScrollExtent;
+        await _scrollCtrl.animateTo(
+          target,
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOut,
         );
+        if (!_scrollCtrl.hasClients ||
+            _scrollCtrl.position.maxScrollExtent <= target) {
+          break;
+        }
       }
     });
   }
@@ -763,13 +774,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           widget.onConversationUpdated?.call();
         },
         onSaveToKeep: (formattedText) async {
-          await ApiService.instance.createNote(
-            conversationId: _conversation.id,
-            title: '✨ AI สรุปห้อง ${_conversation.name}',
-            content: formattedText,
-            category: 'AI สรุปงาน',
-            color: '#7C3AED',
-          );
+          // The snackbar promises both places; BC Keep lists only notes without a room.
+          for (final roomId in [_conversation.id, null]) {
+            await ApiService.instance.createNote(
+              conversationId: roomId,
+              title: '✨ AI สรุปห้อง ${_conversation.name}',
+              content: formattedText,
+              category: 'AI สรุปงาน',
+              color: '#7C3AED',
+            );
+          }
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -784,7 +798,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
-  Future<void> _openAiAssistModal({String initialMode = 'polite'}) async {
+  Future<void> _openAiAssistModal({String initialMode = 'polish'}) async {
     await showDialog<void>(
       context: context,
       builder: (ctx) => _AiWritingAssistModal(
@@ -3110,7 +3124,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
             const SizedBox(width: 8),
             _modeChip(
-              onTap: () => _openAiAssistModal(initialMode: 'polite'),
+              onTap: () => _openAiAssistModal(initialMode: 'polish'),
               icon: Icons.auto_fix_high_rounded,
               label: 'AI เกลาคำพูด',
               fg: AppTheme.personalPurple,
@@ -3119,7 +3133,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
             const SizedBox(width: 8),
             _modeChip(
-              onTap: () => _openAiAssistModal(initialMode: 'smart_reply'),
+              onTap: () => _openAiAssistModal(initialMode: 'suggest_reply'),
               icon: Icons.tips_and_updates_rounded,
               label: 'คิดคำตอบด่วนจากแชทล่าสุด',
               fg: AppTheme.brandDeep,
@@ -4151,8 +4165,8 @@ class _AiWritingAssistModalState extends State<_AiWritingAssistModal> {
   bool _loading = false;
 
   static const List<(String, String, IconData)> _modes = [
-    ('polite', 'เกลาให้สุภาพเป็นทางการ', Icons.auto_fix_high_rounded),
-    ('smart_reply', 'แนะนำคำตอบจากแชทล่าสุด', Icons.tips_and_updates_rounded),
+    ('polish', 'เกลาให้สุภาพเป็นทางการ', Icons.auto_fix_high_rounded),
+    ('suggest_reply', 'แนะนำคำตอบจากแชทล่าสุด', Icons.tips_and_updates_rounded),
     ('action_plan', 'แปลงเป็นแผนงาน (Action Plan)', Icons.checklist_rounded),
     ('translate_en', 'แปลเป็นภาษาอังกฤษธุรกิจ', Icons.translate_rounded),
   ];
@@ -4171,7 +4185,12 @@ class _AiWritingAssistModalState extends State<_AiWritingAssistModal> {
     super.dispose();
   }
 
+  // Each mode chip re-runs the AI; a slower earlier reply must not overwrite the
+  // answer for the mode the user picked last.
+  int _runSeq = 0;
+
   Future<void> _runAssist() async {
+    final seq = ++_runSeq;
     setState(() => _loading = true);
     try {
       final res = await ApiService.instance.requestAiAssist(
@@ -4179,13 +4198,13 @@ class _AiWritingAssistModalState extends State<_AiWritingAssistModal> {
         mode: _mode,
         text: _draftCtrl.text,
       );
-      if (!mounted) return;
+      if (!mounted || seq != _runSeq) return;
       setState(() {
         _result = res;
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || seq != _runSeq) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(
         context,

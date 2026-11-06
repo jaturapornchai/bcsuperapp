@@ -334,7 +334,40 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
         .unwrap();
     let assist_json: Value = serde_json::from_slice(&body_bytes).unwrap();
     assert!(!assist_json["result"].as_str().unwrap().is_empty());
-    assert!(!assist_json["suggestions"].as_array().unwrap().is_empty());
+    // Offline templates offer options; a live DeepSeek answer has none (no canned replies).
+    let live = assist_json["live_api"].as_bool().unwrap();
+    assert_eq!(assist_json["suggestions"].as_array().unwrap().is_empty(), live);
+
+    // suggest_reply drafts as the requester; DeepSeek used to slip Chinese words into Thai.
+    let res = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/ai/assist")
+                .header("authorization", format!("Bearer {}", token))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({ "conversation_id": "conv_group_office", "mode": "suggest_reply" })
+                        .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let body_bytes = axum::body::to_bytes(res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let reply_json: Value = serde_json::from_slice(&body_bytes).unwrap();
+    let reply = reply_json["result"].as_str().unwrap();
+    assert!(!reply.is_empty());
+    if reply_json["live_api"].as_bool().unwrap() {
+        assert!(
+            !reply.chars().any(|c| ('\u{4e00}'..='\u{9fff}').contains(&c)),
+            "Chinese in Thai reply: {reply}"
+        );
+    }
 
     // Mention @ai in group chat -> AI Co-Pilot auto-replies in the room
     let ai_mention_req = json!({
@@ -465,6 +498,7 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
     let handover_res: Value = serde_json::from_slice(&body_bytes).unwrap();
     assert_eq!(handover_res["status"], "ok");
     assert!(handover_res["transferred_conversations"].as_u64().unwrap() >= 1);
+    assert!(handover_res["ai_briefed"].as_u64().is_some());
 
     // 11. Marking an already-read room must not broadcast message_read:
     // every open chat room refreshes and marks read again on that event,
@@ -504,6 +538,20 @@ async fn test_full_bcapp_api_and_minio_mongo_flow() {
         .iter().find(|c| c["id"] == "conv_group_test5").cloned()
         .expect("tester sees the 5-person test room");
     assert!(room.to_string().contains("ห้องทดสอบแชท 5 คน"));
+
+    // Unsend/purge used to accept anyone's token: only the sender or an admin may.
+    let (status, owned) = call(&app, "POST", "/api/conversations/conv_group_office/messages",
+        Some(&token), Some(json!({ "type": "text", "content": "ข้อความของแอดมิน" }))).await;
+    assert_eq!(status, StatusCode::OK);
+    let owned_id = owned["id"].as_str().unwrap().to_string();
+    for action in ["unsend", "purge"] {
+        let (status, _) = call(&app, "POST", &format!("/api/messages/{owned_id}/{action}"),
+            Some(&tester_token), None).await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{action} by someone else");
+    }
+    let (status, _) = call(&app, "POST", &format!("/api/messages/{owned_id}/purge"),
+        Some(&token), None).await;
+    assert_eq!(status, StatusCode::OK);
 
     // 13. Business theme: anyone reads it, only an admin changes it, clients get a push.
     let (status, before) = call(&app, "GET", "/api/settings/theme", None, None).await;

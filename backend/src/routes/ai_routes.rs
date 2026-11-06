@@ -150,6 +150,101 @@ pub async fn update_ai_settings_handler(
     Ok(Json(to_settings_dto(&settings)))
 }
 
+// Chat bubbles and the summary card render plain text, so model markdown
+// (**bold**, # headings, | tables |) would show up as raw symbols.
+const PLAIN_TEXT_RULE: &str = "รูปแบบคำตอบ: ข้อความธรรมดาสำหรับแอปแชท ห้ามใช้ Markdown (ห้ามมี ** หรือ # และห้ามทำตาราง) ถ้าต้องแจกแจงให้ขึ้นบรรทัดใหม่แล้วขึ้นต้นด้วย \"- \" ตอบเป็นภาษาไทย เว้นแต่ถูกขอให้ใช้ภาษาอื่น และห้ามปนอักษรจีนหรือญี่ปุ่นเข้ามาในประโยคไทย";
+
+/// Safety net for models that ignore PLAIN_TEXT_RULE: drops bold markers and heading
+/// hashes, and turns table rows into "- a · b" lines (separator rows removed).
+fn to_plain_text(reply: &str) -> String {
+    reply
+        .trim()
+        .lines()
+        .filter_map(|line| {
+            let t = line.trim();
+            if t.starts_with('|') {
+                let cells: Vec<&str> = t
+                    .trim_matches('|')
+                    .split('|')
+                    .map(str::trim)
+                    .filter(|c| !c.is_empty())
+                    .collect();
+                if cells.iter().all(|c| c.chars().all(|ch| ch == '-' || ch == ':')) {
+                    return None;
+                }
+                return Some(format!("- {}", cells.join(" · ")));
+            }
+            Some(t.trim_start_matches('#').trim_start().to_string())
+        })
+        .collect::<Vec<_>>()
+        .join("
+")
+        .replace("**", "")
+}
+
+/// Splits a summary written under the headings asked for in SUMMARY_PROMPT into
+/// (key points, action items, agreements). Lists stay empty when the headings are missing.
+fn split_summary(text: &str) -> (String, Vec<String>, Vec<String>) {
+    let (mut points, mut actions, mut decisions) = (Vec::new(), Vec::new(), Vec::new());
+    let mut section = 0; // 0 key points, 1 action items, 2 agreements
+    for line in text.lines() {
+        let t = line.trim();
+        let item = t
+            .strip_prefix("- ")
+            .or_else(|| t.strip_prefix("• "))
+            .map(str::trim);
+        if item.is_none() && t.chars().count() <= 40 {
+            if t.contains("สิ่งที่ต้องทำ") {
+                section = 1;
+                continue;
+            }
+            if t.contains("ข้อตกลง") {
+                section = 2;
+                continue;
+            }
+            if t.contains("ประเด็นสำคัญ") {
+                section = 0;
+                continue;
+            }
+        }
+        match (section, item) {
+            (1, Some(i)) if i != "ไม่มี" => actions.push(i.to_string()),
+            (2, Some(i)) if i != "ไม่มี" => decisions.push(i.to_string()),
+            (0, _) if !t.is_empty() => points.push(t.to_string()),
+            _ => {}
+        }
+    }
+    (points.join("
+"), actions, decisions)
+}
+
+const SUMMARY_PROMPT: &str = "สรุปการสนทนาในห้องแชทนี้ แบ่งเป็น 3 หัวข้อ ใช้ชื่อหัวข้อตามนี้ บรรทัดละหัวข้อ:
+ประเด็นสำคัญ:
+สิ่งที่ต้องทำต่อ:
+ข้อตกลงร่วมกัน:
+ใต้แต่ละหัวข้อเขียนเป็นข้อ ข้อละบรรทัด ขึ้นต้นด้วย \"- \" ข้อในสิ่งที่ต้องทำต่อให้ใส่ชื่อผู้รับผิดชอบไว้ท้ายข้อในวงเล็บ ถ้าหัวข้อใดไม่มีให้เขียน \"- ไม่มี\"";
+
+fn history_text(m: &MessageDoc, redact_confidential: bool) -> String {
+    if redact_confidential && m.confidential_pin.is_some() {
+        "[ข้อความความลับองค์กรที่ล็อกด้วยรหัส PIN - ปกปิดข้อมูลอัตโนมัติ]".to_string()
+    } else if m.sender_id == "user_ai" {
+        // A "name:" prefix on its own past turns gets copied into every new reply.
+        m.content.clone()
+    } else {
+        format!("{}: {}{}", m.sender_name, m.content, task_note(m))
+    }
+}
+
+// The AI only sees message text; without this note it keeps reporting a job as
+// unclaimed after someone pressed accept/done on it.
+fn task_note(m: &MessageDoc) -> String {
+    match (m.task_status.as_deref(), m.accepted_by.as_deref()) {
+        (Some("accepted"), Some(by)) => format!(" [สถานะงาน: {} รับงานแล้ว กำลังดำเนินการ]", by),
+        (Some("done"), Some(by)) => format!(" [สถานะงาน: {} ทำเสร็จแล้ว]", by),
+        _ => String::new(),
+    }
+}
+
 pub async fn call_deepseek_brain(
     state: &AppState,
     custom_system_prompt: Option<&str>,
@@ -165,7 +260,13 @@ pub async fn call_deepseek_brain(
     };
 
     let (has_key, _) = mask_secret_key(&settings.api_key);
-    let sys_prompt = custom_system_prompt.unwrap_or(&settings.system_prompt);
+    let sys_prompt = format!(
+        "{}
+
+{}",
+        custom_system_prompt.unwrap_or(&settings.system_prompt),
+        PLAIN_TEXT_RULE
+    );
 
     if has_key && settings.enabled {
         let mut api_messages = vec![json!({
@@ -177,11 +278,7 @@ pub async fn call_deepseek_brain(
             if m.is_unsent {
                 continue;
             }
-            let content_text = if settings.redact_confidential && m.confidential_pin.is_some() {
-                "[ข้อความความลับองค์กรที่ล็อกด้วยรหัส PIN - ปกปิดข้อมูลอัตโนมัติ]".to_string()
-            } else {
-                format!("{}: {}", m.sender_name, m.content)
-            };
+            let content_text = history_text(m, settings.redact_confidential);
             let role = if m.sender_id == "user_ai" {
                 "assistant"
             } else {
@@ -231,7 +328,7 @@ pub async fn call_deepseek_brain(
                         .and_then(|m| m.get("content"))
                         .and_then(|t| t.as_str())
                     {
-                        return (reply.trim().to_string(), settings.model, true);
+                        return (to_plain_text(reply), settings.model, true);
                     }
                 }
             }
@@ -349,35 +446,35 @@ pub async fn summarize_conversation_handler(
         .map_err(|e| ApiError::internal(e.to_string()))?;
     history.sort_by(|a, b| a.created_at.cmp(&b.created_at));
 
-    let prompt = "กรุณาสรุปสาระสำคัญของการสนทนาในห้องแชทนี้ แยกเป็นประเด็นสำคัญ, สิ่งที่ต้องทำต่อ (Action Items), และข้อตกลงร่วมกัน";
     let (summary_text, model, live_api) =
-        call_deepseek_brain(&state, None, prompt, &history).await;
+        call_deepseek_brain(&state, None, SUMMARY_PROMPT, &history).await;
+    let (points, mut action_items, mut decisions) = split_summary(&summary_text);
+    // Without the headings (offline template / model ignored the format) show the
+    // whole text and fall back to items taken from real room data only.
+    let parsed = !action_items.is_empty() && !points.is_empty();
+    let summary = if parsed { points } else { summary_text.clone() };
 
     let mut participants = Vec::new();
-    let mut action_items = Vec::new();
-    let mut decisions = Vec::new();
 
     for m in &history {
         if m.sender_id != "user_ai" && !participants.contains(&m.sender_name) {
             participants.push(m.sender_name.clone());
         }
-        if let Some(ref att) = m.attachment {
-            action_items.push(format!(
-                "ตรวจสอบไฟล์ '{}' ที่ส่งโดย {}",
-                att.file_name, m.sender_name
-            ));
+        if !parsed {
+            if let Some(ref att) = m.attachment {
+                action_items.push(format!(
+                    "ตรวจสอบไฟล์ '{}' ที่ส่งโดย {}",
+                    att.file_name, m.sender_name
+                ));
+            }
         }
     }
 
-    if action_items.is_empty() {
-        action_items.push("ติดตามความคืบหน้างานตามที่แจ้งในห้องแชท".to_string());
+    if decisions.is_empty() {
+        if let Some(ref pinned) = conv.pinned_message {
+            decisions.push(format!("ประกาศปักหมุดของห้อง: {}", pinned.content));
+        }
     }
-    action_items.push("บันทึกข้อมูลสำคัญเก็บเข้าสมุดโน้ตกลุ่ม (BC Keep) หรือคลังไฟล์ถาวร".to_string());
-
-    if let Some(ref pinned) = conv.pinned_message {
-        decisions.push(format!("ประกาศปักหมุดของห้อง: {}", pinned.content));
-    }
-    decisions.push("ใช้ระบบคลังไฟล์ถาวร MinIO และโหมดความลับองค์กรสำหรับการรับ-ส่งเอกสาร".to_string());
 
     if payload.post_to_chat == Some(true) {
         let _ = insert_ai_message(&state, &mut conv, &summary_text).await;
@@ -386,7 +483,7 @@ pub async fn summarize_conversation_handler(
     Ok(Json(json!({
         "conversation_id": conv.id,
         "conversation_name": conv.name,
-        "summary": summary_text,
+        "summary": summary,
         "action_items": action_items,
         "decisions": decisions,
         "participants": participants,
@@ -446,7 +543,22 @@ pub async fn assist_message_handler(
                 "แปลข้อความต่อไปนี้เป็นภาษาอังกฤษสำหรับติดต่อธุรกิจ (Business English): {}",
                 raw_prompt
             ),
-            "suggest_reply" => "จากประวัติแชทล่าสุด ช่วยแนะนำข้อความตอบกลับสั้นๆ ที่สุภาพและเป็นมืออาชีพ 3 รูปแบบ".to_string(),
+            // The history is every member's lines; without naming the requester the AI
+            // drafted as an outsider ("ขอทราบบริบทก่อนว่าคุณวิชัยตอบหรือยัง").
+            "suggest_reply" => {
+                let me = state
+                    .db
+                    .collection::<UserDoc>("users")
+                    .find_one(doc! { "_id": &auth.user_id })
+                    .await
+                    .ok()
+                    .flatten()
+                    .map(|u| u.display_name)
+                    .unwrap_or_else(|| "ผู้ใช้".to_string());
+                format!(
+                    "ร่างข้อความที่ {me} จะพิมพ์ตอบข้อความล่าสุดในห้องนี้ เขียนในมุมของ {me} เอง สั้น สุภาพ เป็นมืออาชีพ 3 แบบ แต่ละแบบขึ้นต้นด้วย \"- \" ส่งคืนเฉพาะ 3 ข้อความนี้ ไม่ต้องเกริ่นและไม่ต้องถามกลับ"
+                )
+            }
             "action_plan" => format!(
                 "ช่วยแตกแผนงาน (Action Plan) เป็นข้อๆ จากหัวข้อต่อไปนี้: {}",
                 raw_prompt
@@ -455,12 +567,9 @@ pub async fn assist_message_handler(
         };
 
         let (reply, _, is_live) = call_deepseek_brain(&state, None, &instruction, &history).await;
-        let suggs = vec![
-            "รับทราบครับ เดี๋ยวรีบดำเนินการตรวจสอบและแจ้งผลกลับภายในวันนี้ครับ".to_string(),
-            "ขอบคุณสำหรับข้อมูลครับ ได้รับไฟล์เอกสารในคลังถาวรเรียบร้อยแล้วครับ".to_string(),
-            "เห็นด้วยตามข้อเสนอครับ สามารถส่งการ์ดขออนุมัติผ่าน Mini-App เข้ามาได้เลยครับ".to_string(),
-        ];
-        (reply, suggs, is_live)
+        // Live answers carry no canned options: those fixed replies did not match
+        // the request (a translation got "รับทราบครับ…"), and the UI hides an empty list.
+        (reply, Vec::new(), is_live)
     } else {
         match mode.as_str() {
             "formal" | "polish" => {
@@ -645,4 +754,65 @@ pub async fn maybe_trigger_ai_reply(
         call_deepseek_brain(state, None, &trigger_msg.content, &history).await;
 
     insert_ai_message(state, conv, &ai_reply_text).await.ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn summary_sections_become_points_actions_and_agreements() {
+        let text = "ประเด็นสำคัญ:
+- รถคันที่ 2 เข้าศูนย์
+- ร้านโชคดีค้างชำระ
+สิ่งที่ต้องทำต่อ:
+- โทรตามเก็บเงิน (สมชาย)
+- แจ้งลูกค้าเลื่อนส่ง (แพร)
+ข้อตกลงร่วมกัน:
+- ไม่มี";
+        let (points, actions, decisions) = split_summary(text);
+        assert_eq!(points, "- รถคันที่ 2 เข้าศูนย์
+- ร้านโชคดีค้างชำระ");
+        assert_eq!(actions, vec!["โทรตามเก็บเงิน (สมชาย)", "แจ้งลูกค้าเลื่อนส่ง (แพร)"]);
+        assert!(decisions.is_empty());
+    }
+
+    #[test]
+    fn summary_without_headings_has_no_action_items() {
+        let (points, actions, _) = split_summary("ห้องนี้คุยเรื่องส่งของ
+- รอบบ่ายส่งได้คันเดียว");
+        assert!(actions.is_empty());
+        assert!(points.contains("รอบบ่าย"));
+    }
+
+    #[test]
+    fn ai_history_shows_task_status_without_ai_prefix() {
+        let mut m: MessageDoc = serde_json::from_value(serde_json::json!({
+            "_id": "m1", "conversation_id": "c1", "sender_id": "u1", "sender_name": "สมชาย", "sender_avatar": "",
+            "type": "text", "content": "ด่วน! ส่งนม 10 ลัง", "created_at": "2026-11-06T00:00:00Z"
+        }))
+        .unwrap();
+        assert_eq!(task_note(&m), "");
+        m.task_status = Some("accepted".into());
+        m.accepted_by = Some("ก้อง".into());
+        assert!(task_note(&m).contains("ก้อง รับงานแล้ว"));
+        m.task_status = Some("done".into());
+        assert!(task_note(&m).contains("ก้อง ทำเสร็จแล้ว"));
+        assert!(history_text(&m, false).starts_with("สมชาย: ด่วน!"));
+        m.sender_id = "user_ai".into();
+        assert_eq!(history_text(&m, false), "ด่วน! ส่งนม 10 ลัง");
+    }
+
+    #[test]
+    fn markdown_is_flattened_for_chat_bubbles() {
+        let md = "## สรุป
+**ประเด็น** สำคัญ
+| งาน | ผู้รับผิดชอบ |
+|---|:---:|
+| โทรตาม | สมชาย |";
+        assert_eq!(to_plain_text(md), "สรุป
+ประเด็น สำคัญ
+- งาน · ผู้รับผิดชอบ
+- โทรตาม · สมชาย");
+    }
 }

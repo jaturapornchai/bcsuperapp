@@ -834,7 +834,7 @@ pub async fn purge_message_handler(
 }
 
 async fn execute_unsend_or_purge(
-    _auth: &AuthUser,
+    auth: &AuthUser,
     msg_id: &str,
     hard_delete: bool,
     state: &AppState,
@@ -848,6 +848,20 @@ async fn execute_unsend_or_purge(
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?
         .ok_or_else(|| ApiError::not_found("ไม่พบข้อความที่ต้องการยกเลิก/ลบ"))?;
+
+    // Only the sender, or an admin ("แอดมินสั่งลบ"), may unsend or destroy a message and its file.
+    if msg.sender_id != auth.user_id {
+        let is_admin = state
+            .db
+            .collection::<bson::Document>("users")
+            .count_documents(doc! { "_id": &auth.user_id, "role": "admin" })
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?
+            > 0;
+        if !is_admin {
+            return Err(ApiError::forbidden("ลบได้เฉพาะข้อความของตัวเอง หรือผู้ดูแลระบบ"));
+        }
+    }
 
     let conv_id = msg.conversation_id.clone();
 

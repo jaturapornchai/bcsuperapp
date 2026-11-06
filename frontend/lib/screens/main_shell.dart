@@ -935,6 +935,7 @@ class _MainShellState extends State<MainShell> {
           selectedIndex: _selectedIndex,
           onDestinationSelected: (idx) {
             setState(() => _selectedIndex = idx);
+            if (idx == 3) _reloadKeepNotes();
             if (idx == 4) _loadAdminDataQuietly();
           },
           backgroundColor: Colors.white,
@@ -1076,6 +1077,7 @@ class _MainShellState extends State<MainShell> {
                       hoverColor: Colors.white.withValues(alpha: 0.08),
                       onTap: () {
                         setState(() => _selectedIndex = idx);
+                        if (idx == 3) _reloadKeepNotes();
                         if (idx == 4) _loadAdminDataQuietly();
                       },
                       child: AnimatedContainer(
@@ -2379,6 +2381,13 @@ class _MainShellState extends State<MainShell> {
   // ---------------------------------------------------------------------------
   // TAB 3: BC KEEP (คลังบันทึกส่วนตัวถาวร ซิงค์ตาม Gmail)
   // ---------------------------------------------------------------------------
+  // Notes are also saved from chat rooms (AI summaries), so refetch on every visit.
+  Future<void> _reloadKeepNotes() async {
+    final fresh = await ApiService.instance.fetchNotes();
+    if (!mounted) return;
+    setState(() => _keepNotes = fresh);
+  }
+
   Widget _buildKeepVaultTab() {
     final isCompact = MediaQuery.of(context).size.width < 600;
     return Scaffold(
@@ -2510,10 +2519,7 @@ class _MainShellState extends State<MainShell> {
                                     await ApiService.instance.deleteNote(
                                       note.id,
                                     );
-                                    final fresh = await ApiService.instance
-                                        .fetchNotes();
-                                    if (!mounted) return;
-                                    setState(() => _keepNotes = fresh);
+                                    await _reloadKeepNotes();
                                   },
                                   icon: const Icon(
                                     Icons.delete_outline_rounded,
@@ -2601,9 +2607,7 @@ class _MainShellState extends State<MainShell> {
                 content: contentCtrl.text.trim(),
                 category: category,
               );
-              final fresh = await ApiService.instance.fetchNotes();
-              if (!mounted) return;
-              setState(() => _keepNotes = fresh);
+              await _reloadKeepNotes();
             },
             child: const Text('บันทึกเข้า BC Keep'),
           ),
@@ -3471,15 +3475,12 @@ class _MainShellState extends State<MainShell> {
                               final res = await ApiService.instance
                                   .adminHandoverChats(fromUserId!, toUserId!);
                               final count =
-                                  res['transferred_rooms'] ??
-                                  res['transferred_count'] ??
-                                  res['rooms_count'] ??
-                                  1;
-                              final summary =
-                                  (res['ai_briefing'] ??
-                                          res['summary'] ??
-                                          'โอนย้ายห้องแชทและส่งสรุปงานค้างด้วย DeepSeek AI เรียบร้อยแล้ว')
-                                      .toString();
+                                  res['transferred_conversations'] ?? 0;
+                              // ai_briefed = rooms DeepSeek really summarised (0 when AI is off).
+                              final briefed = (res['ai_briefed'] ?? 0) as int;
+                              final summary = briefed > 0
+                                  ? 'AI สรุปงานค้างส่งเข้า $briefed ห้อง'
+                                  : 'แจ้งการโอนย้ายในห้องแล้ว (AI ไม่ได้สรุปงาน)';
                               setCardState(() {
                                 isTransferring = false;
                                 handoverResultNote =
@@ -3491,7 +3492,7 @@ class _MainShellState extends State<MainShell> {
                                 SnackBar(
                                   backgroundColor: AppTheme.brandDeep,
                                   content: Text(
-                                    'โอนย้ายห้องแชทสำเร็จ ($count ห้อง) พร้อมส่ง AI Briefing เรียบร้อยแล้ว!',
+                                    'โอนย้ายห้องแชทสำเร็จ ($count ห้อง) · $summary',
                                   ),
                                 ),
                               );

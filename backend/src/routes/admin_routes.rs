@@ -450,21 +450,92 @@ pub async fn admin_handover_handler(
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
 
-    let briefing_text = "🔄 [AI Handover Briefing] โอนย้ายการดูแลห้องแชทจากพนักงานเดิมให้ผู้รับผิดชอบคนใหม่เรียบร้อยแล้ว สามารถเปิดดูประวัติแชทและคลังไฟล์ MinIO ย้อนหลังได้ครบ 100%";
-    let mut count = 0usize;
+    let users: Vec<UserDoc> = state
+        .db
+        .collection::<UserDoc>("users")
+        .find(doc! { "_id": { "$in": [from_id, to_id] } })
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .try_collect()
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let name_of = |id: &str| {
+        users
+            .iter()
+            .find(|u| u.id == id)
+            .map_or_else(|| id.to_string(), |u| u.display_name.clone())
+    };
+    let (from_name, to_name) = (name_of(from_id), name_of(to_id));
+    let prompt = format!(
+        "{from_name} กำลังส่งต่องานในห้องนี้ให้ {to_name} ดูแลแทน จากแชทล่าสุด สรุปงานของ {from_name} ที่ยังค้างอยู่ ไม่เกิน 6 ข้อ ให้ {to_name} รู้ว่าลูกค้าหรือใครรออะไร และต้องทำอะไรต่อ ถ้าไม่มีงานค้างให้บอกว่าไม่มี"
+    );
+    // One DeepSeek call per room, run together so many rooms don't keep the admin waiting.
+    let briefings = futures_util::future::join_all(
+        convs.iter().map(|conv| handover_briefing(&state, &conv.id, &prompt)),
+    )
+    .await;
 
-    for conv in &mut convs {
+    let mut ai_briefed = 0usize;
+    for (conv, briefing) in convs.iter_mut().zip(&briefings) {
         if !conv.member_ids.iter().any(|m| m == to_id) {
             conv.member_ids.push(to_id.to_string());
         }
-        let _ = crate::routes::ai_routes::insert_ai_message(&state, conv, briefing_text).await;
-        count += 1;
+        ai_briefed += usize::from(briefing.is_some());
+        let text = handover_message(&from_name, &to_name, briefing.as_deref());
+        let _ = crate::routes::ai_routes::insert_ai_message(&state, conv, &text).await;
     }
 
     Ok(Json(json!({
-        "transferred_conversations": count,
+        "transferred_conversations": convs.len(),
+        "ai_briefed": ai_briefed,
         "status": "ok",
     })))
+}
+
+/// AI brief of a room's latest chat for whoever takes it over; `None` when the room is
+/// empty or DeepSeek is off/unreachable (its offline fallback is not a real summary).
+async fn handover_briefing(state: &AppState, conv_id: &str, prompt: &str) -> Option<String> {
+    let mut history: Vec<MessageDoc> = state
+        .db
+        .collection::<MessageDoc>("messages")
+        .find(doc! { "conversation_id": conv_id, "is_unsent": false })
+        .sort(doc! { "created_at": -1 })
+        .limit(15)
+        .await
+        .ok()?
+        .try_collect()
+        .await
+        .ok()?;
+    if history.is_empty() {
+        return None;
+    }
+    history.reverse();
+    let (reply, _, live) =
+        crate::routes::ai_routes::call_deepseek_brain(state, None, prompt, &history).await;
+    live.then_some(reply)
+}
+
+/// Only text DeepSeek actually wrote is labelled as AI.
+fn handover_message(from_name: &str, to_name: &str, briefing: Option<&str>) -> String {
+    let head = format!("🔄 โอนย้ายการดูแลห้องนี้จาก {from_name} ให้ {to_name} แล้ว");
+    match briefing {
+        Some(b) => format!("{head}\nAI สรุปงานที่ต้องรับต่อ:\n{b}"),
+        None => format!("{head} เปิดดูประวัติแชทและคลังไฟล์ย้อนหลังได้ครบ"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::handover_message;
+
+    #[test]
+    fn handover_claims_ai_only_for_a_real_briefing() {
+        let offline = handover_message("สมชาย", "นิดา", None);
+        assert!(offline.contains("สมชาย") && offline.contains("นิดา"));
+        assert!(!offline.contains("AI"), "{offline}");
+        let live = handover_message("สมชาย", "นิดา", Some("- โทรตามเก็บเงินร้านโชคดี"));
+        assert!(live.contains("AI") && live.ends_with("- โทรตามเก็บเงินร้านโชคดี"));
+    }
 }
 
 /// Business theme presets; the codes must match `ThemePreset.code` in the Flutter app.
