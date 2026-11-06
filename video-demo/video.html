@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=block" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#0a0f1e;font-family:Prompt,sans-serif;color:#fff}
+#bg{position:absolute;inset:0;background:radial-gradient(1200px 800px at 20% 10%,#1e3a8a 0,transparent 60%),radial-gradient(1000px 700px at 90% 90%,#9a3412 0,transparent 55%),#0a0f1e}
+.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.3}
+.scene{position:absolute;inset:0;opacity:0}
+.brand{position:absolute;left:56px;top:34px;font-weight:700;font-size:28px;letter-spacing:.5px;display:flex;gap:12px;align-items:center;z-index:5}
+.brand i{width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#fbbf24,#10b981);display:inline-block}
+#badge{position:absolute;right:56px;top:26px;z-index:6;padding:10px 28px;border-radius:999px;font-size:28px;font-weight:700;color:#1f1300;background:linear-gradient(90deg,#fbbf24,#f59e0b);box-shadow:0 8px 30px rgba(245,158,11,.35);opacity:0;white-space:nowrap}
+#sub{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);max-width:1560px;padding:12px 34px;border-radius:18px;background:rgba(4,8,20,.84);border:1px solid rgba(255,255,255,.12);font-size:44px;font-weight:500;line-height:1.35;text-align:center;white-space:nowrap;z-index:10}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:24px;backdrop-filter:blur(8px)}
+.grad{background:linear-gradient(90deg,#fbbf24,#fb923c);-webkit-background-clip:text;color:transparent}
+.gradg{background:linear-gradient(90deg,#34d399,#38bdf8);-webkit-background-clip:text;color:transparent}
+.mono{font-family:Consolas,"Courier New",monospace}
+/* browser window */
+.win{position:absolute;border-radius:18px;overflow:hidden;background:#0f172a;box-shadow:0 40px 120px rgba(0,0,0,.65),0 0 0 2px rgba(255,255,255,.16)}
+.bar{height:44px;background:#e8ecf3;display:flex;align-items:center;gap:10px;padding:0 18px}
+.bar i{width:13px;height:13px;border-radius:50%;display:block}
+.url{margin-left:16px;flex:1;height:28px;border-radius:8px;background:#fff;color:#475569;font-size:17px;display:flex;align-items:center;padding:0 14px;white-space:nowrap}
+.url b{color:#0f172a;font-weight:600}
+.view{position:absolute;left:0;top:44px;overflow:hidden;background:#0b1224}
+.cam{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+.cam img.fr{position:absolute;left:0;top:0;width:1920px;height:1080px;display:block}
+.ov{position:absolute;inset:0}
+/* callouts (frame px) */
+.co{position:absolute;border:6px solid #fbbf24;border-radius:18px;box-shadow:0 0 0 4px rgba(251,191,36,.25),0 0 50px rgba(251,191,36,.7);opacity:0}
+.co.red{border-color:#f43f5e;box-shadow:0 0 0 4px rgba(244,63,94,.25),0 0 50px rgba(244,63,94,.8)}
+.co.green{border-color:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,.25),0 0 50px rgba(52,211,153,.7)}
+.co.blue{border-color:#38bdf8;box-shadow:0 0 0 4px rgba(56,189,248,.25),0 0 50px rgba(56,189,248,.7)}
+.cl{position:absolute;opacity:0;display:flex;align-items:center;gap:16px;padding:12px 28px 12px 14px;border-radius:999px;background:#fbbf24;color:#1f1300;font-size:40px;font-weight:700;white-space:nowrap;box-shadow:0 14px 40px rgba(0,0,0,.5);z-index:3}
+.cl.red{background:#f43f5e;color:#fff}.cl.green{background:#10b981;color:#02291d}.cl.blue{background:#38bdf8;color:#04243a}
+.cl i{font-style:normal;width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.82);color:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;flex:none}
+.cl small{font-size:30px;font-weight:500;opacity:.88}
+.cur{position:absolute;left:0;top:0;width:44px;height:44px;opacity:0;filter:drop-shadow(0 4px 6px rgba(0,0,0,.55));z-index:5}
+.rip{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:6px solid #fff;opacity:0;z-index:4}
+/* hook */
+.scrim{position:absolute;left:260px;top:92px;width:1400px;height:832px;border-radius:18px;background:rgba(3,6,18,.74);opacity:0;z-index:7}
+.kin{position:absolute;left:50%;top:230px;transform:translateX(-50%);padding:14px 64px;border-radius:36px;background:rgba(3,6,18,.85);border:3px solid rgba(251,191,36,.75);font-size:84px;font-weight:800;white-space:nowrap;opacity:0;z-index:8;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.ttl{position:absolute;left:0;right:0;top:240px;text-align:center;opacity:0;z-index:8}
+.ttl h1{font-size:160px;font-weight:800;line-height:1.1;text-shadow:0 10px 60px rgba(0,0,0,.8)}
+.ttl p{font-size:52px;font-weight:600;margin-top:14px;text-shadow:0 6px 30px rgba(0,0,0,.9)}
+/* shared graphic-scene bits */
+.gh{position:absolute;left:0;right:0;top:112px;text-align:center;font-size:72px;font-weight:800}
+.node{position:absolute;text-align:center;padding:30px 22px;opacity:0}
+.node b{display:block;font-size:100px;line-height:1.1;margin-bottom:10px}
+.node div{font-size:42px;font-weight:700;line-height:1.3}
+.node small{display:block;font-size:30px;font-weight:500;opacity:.85;margin-top:6px;line-height:1.4}
+.arr{position:absolute;height:10px;border-radius:10px;background:rgba(255,255,255,.14);opacity:0}
+.dot{position:absolute;top:-9px;width:28px;height:28px;border-radius:50%;background:#fbbf24;box-shadow:0 0 22px #fbbf24;opacity:0}
+.chip{position:absolute;opacity:0;padding:10px 24px;border-radius:999px;font-size:34px;font-weight:700;white-space:nowrap;background:rgba(251,191,36,.18);border:3px solid #fbbf24}
+.chip.red{background:rgba(244,63,94,.2);border-color:#f43f5e}.chip.green{background:rgba(16,185,129,.2);border-color:#34d399}.chip.blue{background:rgba(56,189,248,.18);border-color:#38bdf8}
+.crow{position:absolute;display:flex;flex-wrap:wrap;gap:14px 16px}.crow .chip{position:relative}
+.banner{position:absolute;left:0;right:0;text-align:center;opacity:0}
+.banner span{display:inline-block;padding:16px 56px;border-radius:999px;font-size:46px;font-weight:800;background:linear-gradient(90deg,#10b981,#0ea5e9);box-shadow:0 16px 50px rgba(0,0,0,.45)}
+.bub{position:absolute;opacity:0;padding:20px 34px;border-radius:30px 30px 30px 8px;background:#fff;color:#0f172a;font-size:36px;font-weight:600;line-height:1.35;white-space:nowrap;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.bub.r{border-radius:30px 30px 8px 30px}
+.tcards{position:absolute;left:0;right:0;top:290px;display:flex;justify-content:center;gap:44px}
+.tc{width:520px;height:440px;padding:40px 36px;text-align:center;opacity:0}
+.tc b{font-size:120px;display:block;margin-bottom:20px}
+.tc div{font-size:42px;font-weight:700;line-height:1.35}
+.cta{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px}
+.cta h2{font-size:88px;font-weight:800}
+.link{font-size:72px;font-weight:700;padding:22px 64px;border-radius:999px;color:#1f1300;background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+.cta p{font-size:40px;opacity:.92}
+.cta .btns{display:flex;gap:24px}.cta .btns span{font-size:36px;font-weight:700;padding:12px 34px;border-radius:999px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
+/* benefits */
+.bt{position:absolute;width:560px;height:290px;padding:26px 34px;opacity:0;display:flex;flex-direction:column;justify-content:center;gap:14px;transition:none}
+.bt b{font-size:76px;line-height:1}
+.bt div{font-size:36px;font-weight:700;line-height:1.35}
+.bt i{position:absolute;right:24px;top:20px;font-style:normal;width:58px;height:58px;border-radius:50%;background:#fbbf24;color:#1f1300;font-size:34px;font-weight:800;display:flex;align-items:center;justify-content:center}
+</style></head>
+<body>
+<div id="bg"><div class="blob" id="b1" style="width:700px;height:700px;background:#2563eb"></div><div class="blob" id="b2" style="width:600px;height:600px;background:#f59e0b"></div></div>
+<div class="brand"><i></i>BC Super App</div>
+<div id="badge"></div>
+<div id="stage"></div>
+<div id="sub"></div>
+<script src="data.js"></script>
+<script>
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
+const io = x => { x = clamp(x); return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; };
+const back = x => { x = clamp(x); const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+let CURSCENE = null; // mk() remembers the last scene root so builders can just return their render fn
+const mk = h => { const d = document.createElement("div"); d.innerHTML = h.trim(); const n = d.firstChild; if (n.classList.contains("scene")) CURSCENE = n; return n; };
+const F = DATA.facts || {};
+const rv = (e, k, a, dx = 0, dy = 40) => { const x = clamp(back((k - a) / 0.55)); e.style.opacity = x; e.style.transform = `translate(${(1 - x) * dx}px,${(1 - x) * dy}px) scale(${0.92 + 0.08 * x})`; };
+const CUR_SVG = `<svg viewBox="0 0 24 24" width="44" height="44"><path d="M3 2 L3 19 L7.6 14.8 L10.6 21.5 L13.4 20.2 L10.4 13.6 L16.5 13.2 Z" fill="#fff" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+const B = n => DATA.boxes[n] || null; // frame-px rect grabbed by capture.mjs
+let TL = [], built = [], CFG = {};
+// word cue -> seconds from scene start (same rule as capture.mjs C(): exact chunk first, so callouts land on the spoken word)
+const Qs = id => { const s = TL.find(x => x.id === id); return (w, off = 0) => { for (const c of [...s.cues.filter(c => c.d === w), ...s.cues]) { const i = c.d.indexOf(w); if (i >= 0) return c.a + (c.b - c.a) * i / c.d.length + off; } console.warn("no cue", id, w); return 0; }; };
+const S = id => { const s = TL.find(x => x.id === id); return [Qs(id), s.end - s.start]; };
+const co = (a, b, box, n, label, o = {}) => ({ a, b, box, n, label, ...o });
+// [cue, box, n, label, {off, till, tillOff, sub, pos, color}] -> callouts; each ends where the next starts unless it has `till`
+const seq = (id, list) => { const [q, d] = S(id), a = list.map(e => q(e[0], e[4]?.off || 0));
+  return list.map((e, i) => { const o = e[4] || {}; return co(a[i], o.till ? q(o.till, o.tillOff || 0) : i + 1 < list.length ? a[i + 1] - 0.1 : d - 0.3, e[1], e[2], e[3], o); }); };
+const ZERO = { cx: 960, cy: 540, z: 1 }, Z0 = [{ t: 0, ...ZERO }];
+const zoomOn = (id, w, box, z) => { const [q, d] = S(id), a = q(w); return [{ t: 0, ...ZERO }, { t: a, ...ZERO }, { t: a + 0.9, box, z }, { t: d - 0.8, box, z }, { t: d - 0.05, ...ZERO }]; };
+
+/* ---------- per-scene callouts (times = seconds from scene start; boxes = 1920x1080 frame px, valid only until the page scrolls) ---------- */
+function mkCfg() {
+  const C = {};
+  { const [, d] = S("hook"); C.hook = { cam: [{ t: 0, ...ZERO }, { t: d, cx: 900, cy: 520, z: 1.06 }] }; }
+  C.home = { co: seq("home", [
+    ["แถบซ้ายสุดคือเมนูหลัก", "nav", "1", "เมนูหลัก", { pos: "right" }],
+    ["ถัดมาคือรายการห้องแชท", "list", "2", "รายการห้องแชท", { pos: "right" }],
+    ["กรองได้ตามแท็บ", "tabs", "3", "กรองตามแท็บ", { sub: "ทั้งหมด · ส่วนตัว · เรื่องงาน · กลุ่ม · ปักหมุด", pos: "right" }],
+    ["ห้องสำคัญปักหมุดไว้ด้านบน", "g1item", "📌", "ห้องสำคัญ ปักหมุดไว้ด้านบน", { pos: "right" }],
+    ["ตัวเลขในวงเล็บ", "g1item", "👥", "(ตัวเลข) = จำนวนสมาชิกในกลุ่ม", { pos: "right", color: "blue" }],
+    ["ส่วนป้ายด้านบน", "unread", "🔔", "ข้อความที่ยังไม่ได้อ่าน", { color: "red" }],
+    ["มุมขวาบนมีลายน้ำ", "wm", "💧", "ลายน้ำ: ชื่อ + อีเมลคนที่เปิดดู", { pos: "below-left", color: "blue" }],
+    ["ภาพที่ถูกแคปออกไป", "shield", "🛡", "ภาพที่แคป มีชื่อคนแคปติดไป", { color: "green" }]]) };
+  C.summary = { co: seq("summary", [
+    ["ทั้งลูกค้าขอส่วนลด", "chatArea", "💬", "ข้อความค้างอ่าน 20+", { sub: "ส่วนลด · ของขาด · รถเสีย · ลูกหนี้ค้าง", pos: "above", till: "ถ้าต้องไล่อ่านทีละข้อความ" }],
+    ["AI สรุปแชท", "sumBtn", "🧠", "AI สรุปแชท & แกะงาน", { color: "green", off: -0.2 }],
+    ["ส่วนแรก", "sumKey", "1", "ประเด็นสำคัญ", { pos: "left" }],
+    ["ส่วนที่สอง", "sumTodo", "2", "สิ่งที่ต้องทำต่อ", { sub: "(ชื่อ) = คนรับผิดชอบ", color: "blue", pos: "left" }],
+    ["และส่วนที่สาม", "sumDec", "3", "ข้อตกลงของทีม", { pos: "left" }],
+    ["กดบันทึกเข้า", "keepBtn", "📒", "บันทึกเข้า BC Keep", { color: "green" }]]) };
+  C.task = { co: seq("task", [
+    ["มีปุ่มรับงานติดอยู่ใต้ข้อความ", "claim", "👆", "ปุ่มรับงาน ใต้ข้อความสั่งงาน"],
+    ["อย่างงานด่วนนี้", "urgent", "🚨", "งานด่วน: นมกล่อง 10 ลัง", { sub: "ร้านเจริญผล", color: "red", till: "กดรับงาน", tillOff: 0.3 }],
+    ["แถบใต้ข้อความก็เปลี่ยนเป็น", "claim2", "✔", "รับงานโดย ก้อง", { off: 0.3, color: "blue", till: "กดอีกครั้ง" }],
+    ["ก็ขึ้นว่าดำเนินการเสร็จสิ้น", "claim3", "✅", "ดำเนินการเสร็จสิ้น", { off: 0.3, color: "green" }]]) };
+  C.atai = { co: seq("atai", [
+    ["@ai ถามสมองกล", "atChip", "💬", "@ai ถามสมองกลในกลุ่ม", { till: "แล้วกดส่ง" }],
+    ["ก็ตอบกลับเข้ามาในกลุ่ม", "ataiReply", "🤖", "BC AI ตอบในกลุ่ม", { sub: "ทุกคนเห็นคำตอบเดียวกัน", color: "green" }]]) };
+  C.suggest = { co: seq("suggest", [
+    ["สมชายถามว่า", "dsAsk", "❓", "สมชายถาม: ขอลด 3% ได้ไหม", { sub: "ร้านเจ๊หมวย · น้ำดื่ม 100 แพ็ค", till: "คิดคำตอบด่วน", tillOff: -0.2 }],
+    ["คิดคำตอบด่วน", "sugChip", "💡", "คิดคำตอบด่วน จากแชทล่าสุด", { color: "green", till: "แล้วร่างคำตอบ" }],
+    ["แล้วร่างคำตอบ", "sugRes", "3", "AI ร่างคำตอบให้ 3 แบบ", { color: "blue", pos: "left", till: "กดนำไปใส่ช่องพิมพ์", tillOff: 0.5 }]]) };
+  C.polish = { co: seq("polish", [
+    ["ลดสามไม่ได้", "draft", "✍", "พิมพ์สั้นๆ ห้วนๆ", { pos: "above", till: "AI เกลาคำพูด" }],
+    ["ก็เรียบเรียงใหม่", "polRes", "✨", "AI เกลาให้สุภาพ ชัดเจน", { color: "green", pos: "left", till: "กดส่งเข้าห้องแชททันที" }],
+    ["ข้อความก็ส่งถึงสมชาย", "polSent", "✔", "ส่งถึงสมชายแล้ว", { color: "green", pos: "above" }]]) };
+  C.plan = { co: seq("plan", [
+    ["แล้วเลือกโหมดแปลงเป็นแผนงาน", "planChip", "📋", "โหมด: แปลงเป็นแผนงาน", { off: 0.4, color: "blue", till: "เป็นขั้นตอนทีละข้อ", tillOff: -0.2 }],
+    ["เป็นขั้นตอนทีละข้อ", "planRes", "✔", "แผนงานทีละขั้น", { color: "green", pos: "left" }]]) };
+  C.translate = { co: seq("translate", [
+    ["แล้วเลือกโหมดแปล", "trChip", "🌐", "โหมด: แปลเป็นภาษาอังกฤษธุรกิจ", { off: 0.4, color: "blue", till: "ก็ได้ข้อความภาษาอังกฤษ", tillOff: -0.2 }],
+    ["ก็ได้ข้อความภาษาอังกฤษ", "trRes", "EN", "ภาษาอังกฤษธุรกิจ สุภาพ", { color: "green", pos: "left" }]]) };
+  C.aichat = { co: seq("aichat", [
+    ["ก็ตอบกลับมาในห้อง", "aiReply", "🤖", "BC AI ร่างข้อความทวงเงินให้", { sub: "ตรวจรายละเอียด ก่อนส่งต่อ", color: "green" }]]) };
+  C.approve = { co: seq("approve", [
+    ["มีทั้งใบแจ้งหนี้จากนิดา", "invoice", "🧾", "ใบแจ้งหนี้จากนิดา"],
+    ["และการ์ดขออนุมัติสั่งซื้อจากบอส", "card", "📝", "การ์ดขออนุมัติสั่งซื้อ", { sub: "น้ำมันพืช 200 ลัง · 98,400 บาท", color: "blue", pos: "above" }],
+    ["กดอนุมัติทันทีได้ในแชท", "approveBtn", "👆", "อนุมัติทันที ในแชท", { color: "green" }],
+    ["ก็เปลี่ยนเป็นอนุมัติแล้ว", "card2", "✅", "อนุมัติแล้ว · ทุกคนเห็นตรงกัน", { color: "green", pos: "above" }]]) };
+  C.purge = { co: seq("purge", [
+    ["หลุดเข้ากลุ่มทีมขาย", "payroll", "⚠", "ไฟล์เงินเดือน ส่งผิดห้อง!", { color: "red", pos: "above", till: "แล้วเลือก", tillOff: -0.6 }],
+    ["แล้วเลือก", "purgeItem", "🗑", "ยกเลิกข้อความ & ลบไฟล์ทันที", { off: -0.5, color: "red", till: "แล้วเลือก", tillOff: 1.0 }]]) };
+  C.vault = { co: seq("vault", [
+    ["แยกเป็นแท็บ", "vTabs", "🗂", "คลังรูป · ไฟล์ · โน้ต แยกแท็บ", { till: "ส่วนปุ่มแว่นขยายด้านบน", tillOff: -0.3 }],
+    ["ส่วนปุ่มแว่นขยายด้านบน", "searchBtn", "🔍", "ค้นข้อความเก่าในห้อง", { pos: "below-left" }],
+    ["พิมพ์คำว่า", "searchBox", "⌨", "พิมพ์: โชคดี"],
+    ["ก็เจอข้อความ", "searchHit", "✔", "เจอข้อความทันที", { color: "green", pos: "right" }]]) };
+  C.keep = { co: seq("keep", [
+    ["สรุปจาก", "kSum", "🧠", "สรุปจาก AI ที่บันทึกไว้", { color: "green", pos: "above" }],
+    ["รายชื่อลูกค้าสายบางบัวทอง", "kBang", "📒", "โน้ต: ลูกค้าสายบางบัวทอง"],
+    ["และเป้ายอดขายเดือนนี้", "kGoal", "🎯", "โน้ต: เป้ายอดขายเดือนนี้", { color: "blue" }]]) };
+  C.admin = { co: seq("admin", [
+    ["ด้านบนเป็นสถิติการใช้งาน", "stats", "📊", "สถิติการใช้งาน"],
+    ["ถัดมาเลือกธีมสี", "themes", "🎨", "ธีมสีองค์กร 7 แบบ", { color: "blue" }],
+    ["ส่วนนี้คือการตั้งค่า", "dsCard", "🧠", "ตั้งค่า DeepSeek AI ประจำองค์กร"],
+    ["เลือกรุ่นสมองกลได้", "model", "⚙", "เลือกรุ่นสมองกล"],
+    ["คีย์ถูกซ่อนไว้", "apiKey", "🔒", "API Key ถูกซ่อน ไม่แสดงบนจอ", { color: "red" }],
+    ["และเขียนคำสั่งตั้งต้นได้", "sysPrompt", "✍", "คำสั่งตั้งต้น (System Prompt)", { sub: "บอก AI ว่าองค์กรทำธุรกิจอะไร", color: "green" }]]) };
+  C.handover = { co: seq("handover", [
+    ["เลือกแพรเป็นพนักงานต้นทาง", "hoFrom", "1", "พนักงานต้นทาง: แพร"],
+    ["เลือกมายด์", "hoTo", "2", "ผู้รับงานคนใหม่: มายด์", { color: "blue" }],
+    ["แล้วกดโอนย้าย", "hoGo", "➜", "โอนย้าย + AI สรุปงานค้าง", { color: "green", till: "เปิดห้องทีมขายดู", tillOff: -0.3 }],
+    ["มายด์อ่านแล้ว", "brief", "🤖", "AI สรุปงานค้างของแพร ส่งให้มายด์", { color: "green", pos: "above" }]]) };
+  C.miniapps = { co: seq("miniapps", [
+    ["รวมมินิแอปที่ทำงานร่วมกับแชท", "maGrid", "🧩", "มินิแอป ทำงานร่วมกับแชท", { till: "อนุมัติใบลา", tillOff: -0.2 }],
+    ["อนุมัติใบลา", "maLeave", "1", "อนุมัติใบลา"],
+    ["ออกใบเสนอราคาด่วน", "maQuote", "2", "ใบเสนอราคาด่วน"],
+    ["เบิกค่าใช้จ่าย", "maClaim", "3", "เบิกค่าใช้จ่าย + แนบบิล"],
+    ["และจองคิว", "maBook", "4", "จองคิวนัดลูกค้า", { till: "กรอกแล้วส่งเป็นการ์ดเข้าห้อง", tillOff: -0.2 }],
+    ["กรอกแล้วส่งเป็นการ์ดเข้าห้อง", "maForm", "📝", "กรอกฟอร์ม", { off: 1.0, pos: "right", till: "ให้หัวหน้ากดอนุมัติ" }],
+    ["ให้หัวหน้ากดอนุมัติ", "maPreview", "💬", "ส่งเป็นการ์ด ให้หัวหน้าอนุมัติในแชท", { color: "green" }]]) };
+  return C;
+}
+const camAt = (cam, k) => { if (!cam || !cam.length) return ZERO; const g = c => { if (c.box) { const b = B(c.box); return b ? { t: c.t, cx: b.x + b.w / 2, cy: b.y + b.h / 2, z: c.z } : { t: c.t, ...ZERO, z: c.z }; } return c; };
+  const L = cam.map(g); if (k <= L[0].t) return L[0]; for (let i = 1; i < L.length; i++) if (k <= L[i].t) { const p = L[i - 1], q = L[i], e = io((k - p.t) / (q.t - p.t || 1)); return { cx: p.cx + (q.cx - p.cx) * e, cy: p.cy + (q.cy - p.cy) * e, z: p.z + (q.z - p.z) * e }; } return L.at(-1); };
+const txt = v => (typeof v === "function" ? v() : v || "");
+
+const builders = {
+  clip(s) {
+    const D = DATA.scenes[s.id], cfg = CFG[s.id] || {}, hook = s.id === "hook";
+    const W = 1400, H = 788, WX = 260, WY = 92, base = W / 1920;
+    const root = mk(`<div class="scene"></div>`);
+    root.innerHTML = `<div class="win" style="left:${WX}px;top:${WY}px;width:${W}px;height:${H + 44}px"><div class="bar"><i style="background:#f87171"></i><i style="background:#fbbf24"></i><i style="background:#34d399"></i><div class="url">🔒&nbsp;<b>BC Super App</b></div></div>
+        <div class="view" style="width:${W}px;height:${H}px"><div class="cam"><img class="fr"><div class="ov"></div></div></div></div>${hook ? `<div class="scrim"></div><div class="kin"></div><div class="ttl"><h1><span class="grad">BC</span> Super App</h1><p>แชทองค์กร + ผู้ช่วย AI ทุกห้อง</p></div>
+        <div class="crow" style="left:0;right:0;top:600px;justify-content:center;z-index:8">${["💬 แชทองค์กร", "🤖 ผู้ช่วย AI ทุกห้อง", "⚡ ทีมทำงานเร็วขึ้น"].map((t, i) => `<div class="chip ${i === 2 ? "green" : ""}" style="font-size:38px">${t}</div>`).join("")}</div>` : ""}`;
+    const win = root.querySelector(".win"), img = root.querySelector("img"), cam = root.querySelector(".cam"), ov = root.querySelector(".ov");
+    const cos = (cfg.co || []).map(c => {
+      const bx = B(c.box); if (!bx) { console.warn("no box", s.id, c.box); return null; }
+      const hh = Math.min(bx.h, 1068 - bx.y); if (bx.y > 1040 || hh < 8) { console.warn("box off-frame", s.id, c.box); return null; }
+      const b2 = { ...bx, h: hh }, pad = 10, col = c.color || "", pos = c.pos || "below";
+      const frame = mk(`<div class="co ${col}" style="left:${b2.x - pad}px;top:${b2.y - pad}px;width:${b2.w + pad * 2}px;height:${b2.h + pad * 2}px"></div>`);
+      const lab = mk(`<div class="cl ${col}"><i>${c.n}</i><span class="lt"></span></div>`);
+      ov.appendChild(frame); ov.appendChild(lab);
+      return { c, bx: b2, frame, lab, lt: lab.querySelector(".lt"), pos, placed: false, lastT: "" };
+    }).filter(Boolean);
+    const setLabel = o => { const l = txt(o.c.label), sb = txt(o.c.sub), h = l + (sb ? `<br><small>${sb}</small>` : ""); if (h !== o.lastT) { o.lt.innerHTML = h; o.lastT = h; o.placed = false; } };
+    const placeLabels = () => cos.forEach(o => { if (o.placed) return; const lw = o.lab.offsetWidth, lh = o.lab.offsetHeight, { x, y, w, h } = o.bx, p = o.pos; let lx = x, ly = y + h + 24;
+      if (p === "below-left") lx = x + w - lw; if (p === "below") lx = x + w / 2 - lw / 2;
+      if (p.startsWith("above")) { ly = y - lh - 24; if (p === "above-left") lx = x + w - lw; if (p === "above") lx = x + w / 2 - lw / 2; }
+      if (p === "left") { lx = x - lw - 28; ly = y + h / 2 - lh / 2; } if (p === "right") { lx = x + w + 28; ly = y + h / 2 - lh / 2; }
+      lx = Math.max(24, Math.min(1920 - lw - 24, lx)); ly = Math.max(24, Math.min(1080 - lh - 24, ly));
+      o.lab.style.transformOrigin = p.includes("left") ? "top right" : p === "below" || p === "above" ? "top center" : "top left";
+      o.lab.style.left = lx + "px"; o.lab.style.top = ly + "px"; o.placed = true; });
+    const track = D.cursor || []; let cur = null, rips = [];
+    if (track.length) {
+      cur = mk(`<div class="cur">${CUR_SVG}</div>`); ov.appendChild(cur);
+      rips = track.filter(p => p.click).map(p => { const e = mk(`<div class="rip" style="left:${p.x}px;top:${p.y}px"></div>`); ov.appendChild(e); return { t: p.t, e }; });
+    }
+    let hk = null;
+    if (hook) { const q = Qs("hook"), [, d] = S("hook"), W2 = ["ถ้าคุณเป็นเจ้าของกิจการ", "แชทงานปนกับแชทส่วนตัว", "ข้อความในกลุ่มเด้งเป็นร้อย", "สั่งงานไปแล้ว", "ส่งไฟล์ลับผิดห้อง", "พอพนักงานลาออก", "จะพาไปรู้จัก"].map(w => q(w));
+      const T = ["เจ้าของกิจการ เคยเจอไหม?", "แชทงาน ปนแชทส่วนตัว?", "ข้อความเด้งเป็นร้อย อ่านไม่ทัน?", "สั่งงานแล้ว ใครรับ?", "ส่งไฟล์ลับผิดห้อง ลบไม่ทัน?", "พนักงานลาออก งานหายไปด้วย?"];
+      hk = { kin: root.querySelector(".kin"), ttl: root.querySelector(".ttl"), scrim: root.querySelector(".scrim"), chips: [...root.querySelectorAll(".crow .chip")], ta: W2[6] - 0.3, out: d - 0.5,
+        lines: T.map((x, i) => [W2[i], W2[i + 1] - 0.45, x]), ca: ["แชทองค์กร", "ที่มีผู้ช่วย", "ให้ทั้งทีมทำงานเร็วขึ้นค่ะ"].map(w => q(w)) }; }
+    const idx = D.index, fps = 30;
+    return async t => {
+      const k = t - s.start, fi = clamp(Math.round(k * fps), 0, idx.length - 1), f = `clips/${s.id}/${idx[fi]}`;
+      if (img.dataset.f !== f) { img.dataset.f = f; img.src = f; await img.decode().catch(() => {}); }
+      if (hk) {
+        let on = null; for (const l of hk.lines) if (k >= l[0] && k < l[1] + 0.4) on = l;
+        if (on) { const e = back((k - on[0]) / 0.5), o = Math.min(clamp((k - on[0]) / 0.25), clamp((on[1] + 0.4 - k) / 0.35)); hk.kin.textContent = on[2]; hk.kin.style.opacity = o; hk.kin.style.transform = `translateX(-50%) scale(${0.8 + 0.2 * e})`; } else hk.kin.style.opacity = 0;
+        const g = back((k - hk.ta) / 0.8), out = clamp((k - hk.out) / 0.5); hk.ttl.style.opacity = clamp(g) * (1 - out); hk.ttl.style.transform = `scale(${0.85 + 0.15 * g}) translateY(${out * -20}px)`;
+        hk.scrim.style.opacity = clamp((k - hk.ta + 0.3) / 0.6) * (1 - out);
+        hk.chips.forEach((c, i) => { rv(c, k, hk.ca[i], 0, 30); c.style.opacity *= 1 - out; });
+      }
+      { const w = ease(k / 0.7); win.style.transform = `scale(${0.94 + 0.06 * w})`; }
+      const c = camAt(cfg.cam, k), z = c.z, sc = base * z;
+      const tx = clamp(W / 2 - c.cx * sc, W - 1920 * sc, 0), ty = clamp(H / 2 - c.cy * sc, H - 1080 * sc, 0);
+      cam.style.transform = `translate(${tx}px,${ty}px) scale(${sc})`;
+      cos.forEach(setLabel); placeLabels();
+      cos.forEach(o => { const a = o.c.a, b = o.c.b, v = Math.min(clamp((k - a) / 0.3), clamp((b - k) / 0.3)), pu = 1 + 0.025 * Math.sin(k * 7);
+        o.frame.style.opacity = v; o.frame.style.transform = `scale(${pu})`; const e = back((k - a) / 0.45);
+        o.lab.style.opacity = clamp(v * 1.4); o.lab.style.transform = `scale(${(0.7 + 0.3 * e) / z}) translateY(${(1 - clamp(e)) * 14}px)`; });
+      if (cur) { const f0 = track[0]; let px = f0.x, py = f0.y, down = 0;
+        if (k >= f0.t) { let i = 0; while (i < track.length - 1 && track[i + 1].t <= k) i++; const p = track[i], q = track[i + 1]; px = p.x; py = p.y; if (q && q.t > p.t) { const e = clamp((k - p.t) / (q.t - p.t)); px = p.x + (q.x - p.x) * e; py = p.y + (q.y - p.y) * e; } }
+        for (const r of rips) { const d = k - r.t; if (d > -0.02 && d < 0.14) down = 1; const e = clamp(d / 0.6); r.e.style.opacity = d >= 0 && d < 0.6 ? 1 - e : 0; r.e.style.transform = `scale(${0.3 + 1.5 * ease(e)})`; }
+        cur.style.opacity = ease((k - (f0.t - 0.6)) / 0.4); cur.style.transform = `translate(${px - 4}px,${py - 3}px) scale(${(down ? 0.82 : 1.2) / Math.sqrt(z)})`;
+      }
+    };
+  },
+  aimap(s) {
+    const q = Qs(s.id), at = ["หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "และแปด"].map(w => q(w)), ba = q("ทั้งหมดใช้สมองกล", -0.2);
+    const tiles = s.points.map((p, i) => { const [ic, ...r] = p.split(" "); return `<div class="bt card" style="left:${84 + (i % 4) * 444}px;top:${206 + Math.floor(i / 4) * 300}px;width:420px;height:272px"><i>${i + 1}</i><b>${ic}</b><div>${r.join(" ").replace(/ · /g, "<br>")}</div></div>`; }).join("");
+    const root = mk(`<div class="scene"><div class="gh" style="top:84px"><span class="grad">AI</span> ช่วยอะไรได้บ้าง</div>${tiles}<div class="banner" style="top:850px"><span>🧠 ใช้สมองกล DeepSeek · แอดมินตั้งค่าเองได้ในหลังบ้าน</span></div></div>`);
+    const head = root.querySelector(".gh"), ts = [...root.querySelectorAll(".bt")], ban = root.querySelector(".banner");
+    return t => { const k = t - s.start; head.style.opacity = ease(k / 0.6);
+      ts.forEach((e, i) => { rv(e, k, at[i] - 0.15, 0, 60); const on = k >= at[i] && k < (i < 7 ? at[i + 1] : ba); e.style.borderColor = on ? "#fbbf24" : ""; e.style.boxShadow = on ? "0 0 0 3px #fbbf24,0 0 50px rgba(251,191,36,.45)" : ""; });
+      rv(ban, k, ba, 0, 30); };
+  },
+  benefits(s) {
+    const q = Qs(s.id), at = ["หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "และหก"].map(w => q(w));
+    const tiles = s.points.map((p, i) => { const [ic, ...r] = p.split(" "); return `<div class="bt card" style="left:${84 + (i % 3) * 596}px;top:${196 + Math.floor(i / 3) * 316}px"><i>${i + 1}</i><b>${ic}</b><div>${r.join(" ").replace(/ · /g, "<br>")}</div></div>`; }).join("");
+    const root = mk(`<div class="scene"><div class="gh" style="top:84px">ประโยชน์ที่ <span class="grad">ธุรกิจได้รับ</span></div>${tiles}<div class="banner" style="top:840px"><span>ทั้งทีม ทำงานในแอปเดียวกัน</span></div></div>`);
+    const head = root.querySelector(".gh"), ts = [...root.querySelectorAll(".bt")], ban = root.querySelector(".banner"), ba = q("ทั้งทีมทำงานในแอปเดียวกันค่ะ", -0.2);
+    return t => { const k = t - s.start; head.style.opacity = ease(k / 0.6);
+      ts.forEach((e, i) => { rv(e, k, at[i] - 0.15, 0, 60); const on = k >= at[i] && k < (i < 5 ? at[i + 1] : ba); e.style.borderColor = on ? "#fbbf24" : ""; e.style.boxShadow = on ? "0 0 0 3px #fbbf24,0 0 50px rgba(251,191,36,.45)" : ""; });
+      rv(ban, k, ba, 0, 30); };
+  },
+  cta(s) {
+    const q = Qs(s.id);
+    const root = mk(`<div class="scene"><div class="cta"><h2>แชทองค์กร + AI <span class="grad">ในแอปเดียว</span></h2><div class="link">📞 ติดต่อทีมงาน · ขอดูเดโม</div><p>ข้อมูลในวิดีโอนี้ เป็นข้อมูลตัวอย่างทั้งหมด</p><div class="btns"><span>👍 กดไลก์</span><span>🔔 กดติดตาม</span><span>↗ แชร์ให้เพื่อนเจ้าของกิจการ</span></div></div></div>`);
+    const els = [...root.querySelector(".cta").children], at = [q("ถ้าธุรกิจของคุณ"), q("ติดต่อทีมงาน"), q("ข้อมูลในวิดีโอนี้"), q("ฝากกดไลก์", -0.3)], link = els[1];
+    return t => { const k = t - s.start;
+      els.forEach((e, i) => { const x = back((k - at[i]) / 0.6); e.style.opacity = clamp(x); e.style.transform = `translateY(${(1 - clamp(x)) * 40}px) scale(${i === 1 ? 1 + 0.03 * Math.sin(k * 3) * clamp(k - at[1] - 1) : 1})`; });
+      link.style.boxShadow = `0 0 0 ${((k * 30) % 40)}px rgba(251,191,36,${0.5 * (1 - ((k * 30) % 40) / 40)})`; };
+  },
+};
+
+window.init = tl => {
+  TL = tl; CFG = mkCfg(); const st = document.getElementById("stage");
+  built = TL.map(s => { const r = builders[s.type](s), n = CURSCENE; st.appendChild(n); return { s, n, r }; });
+};
+const FADE = 0.45;
+window.seek = async t => {
+  document.getElementById("b1").style.transform = `translate(${200 + 300 * Math.sin(t / 7)}px,${100 + 200 * Math.cos(t / 9)}px)`;
+  document.getElementById("b2").style.transform = `translate(${1200 + 250 * Math.cos(t / 8)}px,${500 + 180 * Math.sin(t / 6)}px)`;
+  const jobs = [];
+  for (const { s, n, r } of built) {
+    const o = Math.min(clamp((t - s.start) / FADE), clamp((s.end - t) / FADE)), last = s === TL[TL.length - 1];
+    const op = last ? clamp((t - s.start) / FADE) : o;
+    n.style.opacity = op; n.style.display = op > 0 ? "" : "none";
+    if (op > 0) jobs.push(r(t));
+  }
+  await Promise.all(jobs);
+  const cur = TL.find(s => t >= s.start && t < s.end), bd = document.getElementById("badge");
+  if (cur && cur.badge) { const e = back((t - cur.start - 0.3) / 0.5), o2 = Math.min(clamp(e), clamp((cur.end - t) / 0.4)); bd.textContent = cur.badge; bd.style.opacity = o2; bd.style.transform = `translateY(${(1 - clamp(e)) * -30}px)`; } else bd.style.opacity = 0;
+  const sub = TL.flatMap(s => s.subs).find(x => t >= x.a && t < x.b + 0.25), el2 = document.getElementById("sub");
+  el2.textContent = sub ? sub.text : ""; el2.style.display = sub ? "" : "none";
+};
+</script>
+</body></html>

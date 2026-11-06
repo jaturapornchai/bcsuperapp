@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@600;700;800&display=block" rel="stylesheet">
+<style>
+*{margin:0;box-sizing:border-box}
+html,body{width:1280px;height:720px;overflow:hidden;background:#0a0f1e;font-family:Prompt,sans-serif;color:#fff}
+.shot{position:absolute;right:-40px;top:70px;width:820px;border-radius:18px;box-shadow:0 30px 80px #000c;transform:perspective(1400px) rotateY(-14deg);border:3px solid #ffffff22}
+.fade{position:absolute;inset:0;background:linear-gradient(90deg,#0a0f1e 38%,#0a0f1ecc 55%,#0a0f1e00 80%)}
+.txt{position:absolute;left:56px;top:70px;width:640px}
+.tag{display:inline-block;background:#ef4444;font-weight:700;font-size:30px;padding:6px 22px;border-radius:12px}
+h1{font-weight:800;font-size:104px;line-height:1.08;margin-top:26px;filter:drop-shadow(0 6px 18px #000)}
+.grad{background:linear-gradient(90deg,#fbbf24,#fb923c);-webkit-background-clip:text;color:transparent}
+.chips{margin-top:30px;display:flex;flex-wrap:wrap;gap:12px}
+.chips span{background:#1e293bee;border:2px solid #34d399;font-weight:600;font-size:30px;padding:6px 18px;border-radius:40px}
+.brand{position:absolute;left:56px;bottom:44px;font-weight:700;font-size:40px}
+</style>
+<img class="shot" id="bg"><div class="fade"></div>
+<div class="txt"><span class="tag">สอนใช้งานละเอียด</span>
+<h1>แชทองค์กร<br><span class="grad">+ AI ทุกห้อง</span></h1>
+<div class="chips"><span>🤖 สรุปแชท</span><span>✅ แกะงาน</span><span>✍ ร่างคำตอบ</span></div></div>
+<div class="brand"><span class="grad">BC</span> Super App</div>
+<script>bg.src = new URLSearchParams(location.search).get("bg");</script>

@@ -18,3 +18,20 @@ frontend/.flutter-plugins-dependencies
 
 # Playwright MCP console/session logs
 .playwright-mcp/
+
+# demo video build outputs (scripts stay tracked)
+video-demo/node_modules
+video-demo/clips/
+video-demo/tts/
+video-demo/check/
+video-demo/*.wav
+video-demo/*.mp4
+video-demo/*.jpg
+video-demo/*.png
+video-demo/data.js
+video-demo/assets/
+video-demo/rooms.json
+video-demo/boxes.json
+video-demo/sfx.json
+video-demo/facts.json
+video-demo/timeline.json
